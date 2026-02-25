@@ -84,6 +84,41 @@ color:#64748b!important;font-size:.7rem!important;text-transform:uppercase;lette
 .js-plotly-plot .plotly .hoverlayer .hovertext text { fill: #f8fafc !important; }
 .js-plotly-plot .plotly .hoverlayer .hovertext path { fill: #1e293b !important; stroke: #475569 !important; }
 .js-plotly-plot .plotly g.infolayer text { fill: #94a3b8 !important; }
+/* ── Premium sidebar nav buttons ── */
+section[data-testid="stSidebar"] div.stButton > button {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: #94a3b8 !important;
+    font-size: .875rem !important;
+    font-weight: 500 !important;
+    font-family: 'Inter', sans-serif !important;
+    text-align: left !important;
+    justify-content: flex-start !important;
+    padding: 9px 14px !important;
+    border-radius: 8px !important;
+    margin-bottom: 1px !important;
+    transition: all .18s ease !important;
+    letter-spacing: .01em !important;
+    width: 100% !important;
+}
+section[data-testid="stSidebar"] div.stButton > button:hover {
+    background: rgba(255,255,255,0.06) !important;
+    color: #f1f5f9 !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+section[data-testid="stSidebar"] div.stButton > button:active,
+section[data-testid="stSidebar"] div.stButton > button:focus {
+    background: linear-gradient(90deg,rgba(233,69,96,0.15),rgba(99,102,241,0.1)) !important;
+    color: #f8fafc !important;
+    border-left: 3px solid #e94560 !important;
+    padding-left: 11px !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+/* Hide the radio widget completely */
+section[data-testid="stSidebar"] div[data-testid="stRadio"] { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -189,14 +224,78 @@ def main():
         """, unsafe_allow_html=True)
 
         st.divider()
-        page = st.radio("Navigate", [
-            "💬 AI RevOps Copilot",
-            "📊 Revenue Dashboard","⚡ Generate Leads","🔍 Lead Intelligence",
-            "🧭 Sales Navigator","💼 CRM / Salesforce","📈 Pipeline Analytics",
-            "📧 Outreach","🏦 Post-Sales (NDR)","🔮 Scenario Modeler"],
-            key="nav_radio",
-            index=1,
-            label_visibility="collapsed")
+
+        # Premium sidebar navigation using query_params-based state
+        NAV_ITEMS = [
+            ("💬", "AI RevOps Copilot"),
+            ("📊", "Revenue Dashboard"),
+            ("⚡", "Generate Leads"),
+            ("🔍", "Lead Intelligence"),
+            ("🧭", "Sales Navigator"),
+            ("💼", "CRM / Salesforce"),
+            ("📈", "Pipeline Analytics"),
+            ("📧", "Outreach"),
+            ("🏦", "Post-Sales (NDR)"),
+            ("🔮", "Scenario Modeler"),
+        ]
+        FULL_LABELS = [f"{e} {n}" for e,n in NAV_ITEMS]
+
+        # CSS for premium sidebar buttons
+        st.markdown("""
+        <style>
+        div[data-testid="stRadio"] { display: none !important; }
+        .nav-btn {
+            display: flex; align-items: center; gap: 10px;
+            width: 100%; padding: 10px 14px; margin-bottom: 2px;
+            border-radius: 8px; border: none; background: transparent;
+            color: #94a3b8; font-size: .88rem; font-weight: 500;
+            cursor: pointer; text-align: left; transition: all .18s ease;
+            font-family: 'Inter', sans-serif; letter-spacing: .01em;
+        }
+        .nav-btn:hover { background: rgba(255,255,255,0.06); color: #f1f5f9; }
+        .nav-btn.active {
+            background: linear-gradient(90deg, rgba(233,69,96,0.18), rgba(99,102,241,0.12));
+            color: #f8fafc !important; font-weight: 700;
+            border-left: 3px solid #e94560;
+            padding-left: 11px;
+        }
+        .nav-btn .nav-icon { font-size: 1.05em; min-width: 22px; }
+        .nav-btn .nav-label { flex: 1; }
+        .nav-section { font-size: .62rem; font-weight: 700; color: #475569;
+            text-transform: uppercase; letter-spacing: 1.5px;
+            padding: 12px 14px 4px; }
+        </style>
+        """, unsafe_allow_html=True)
+
+        # Render buttons and track active page
+        if "_nav_page" not in st.session_state:
+            st.session_state["_nav_page"] = "📊 Revenue Dashboard"
+
+        cur_page = st.session_state.get("_nav_page", "📊 Revenue Dashboard")
+
+        for emoji, label in NAV_ITEMS:
+            full = f"{emoji} {label}"
+            is_active = cur_page == full
+            # Inject active style just before the active button
+            if is_active:
+                st.markdown(f"""
+                <style>
+                section[data-testid="stSidebar"] div.stButton:has(button[data-testid^="stBaseButton"][aria-label*="{label}"]) > button,
+                section[data-testid="stSidebar"] div.stButton > button.active-nav {{
+                    background: linear-gradient(90deg,rgba(233,69,96,0.18),rgba(99,102,241,0.12)) !important;
+                    color: #f8fafc !important; font-weight: 700 !important;
+                    border-left: 3px solid #e94560 !important;
+                    padding-left: 11px !important;
+                }}
+                </style>
+                """, unsafe_allow_html=True)
+            clicked = st.button(f"{emoji}\u2002{label}", key=f"nav_{label}",
+                                use_container_width=True)
+            if clicked:
+                st.session_state["_nav_page"] = full
+                st.rerun()
+
+        page = cur_page
 
     # Pages that get date/rep filters
     ANALYTICS_PAGES = {"📊 Revenue Dashboard","💼 CRM / Salesforce","📈 Pipeline Analytics","📧 Outreach"}
@@ -417,7 +516,6 @@ def render_scenario_modeler(pm, rep_name=None):
     with c4:
         mod_cycle = st.slider("Cycle Time Δ (Days)", -30, 30, 0, 1, help="Accelerate (-) or decelerate (+) sales velocity.")
 
-    st.divider()
 
     # Calculations
     proj_leads = int(base_leads * (1 + mod_leads / 100.0))
@@ -429,7 +527,6 @@ def render_scenario_modeler(pm, rep_name=None):
     base_rev = pm["total_revenue"]
     rev_diff = proj_rev - base_rev
 
-    # Dynamic Insights Engine — placed between Levers and Outcomes
     st.markdown('<div class="section-header">🤖 AI SCENARIO INSIGHTS</div>', unsafe_allow_html=True)
     if proj_rev >= pm["revenue_target"]:
         st.success(f"**Target Attainable:** This scenario generates **{fmtr(proj_rev - pm['revenue_target'])} above quota**. {'The accelerated sales velocity is pulling revenue forward.' if mod_cycle < 0 else 'Even with cycle delays, sheer volume covers the spread.'}")
@@ -439,8 +536,6 @@ def render_scenario_modeler(pm, rep_name=None):
     else:
         rev_diff = proj_rev - pm["total_revenue"]
         st.error(f"**Severe Revenue Contraction:** This scenario results in a {fmtr(abs(rev_diff))} loss against baseline pace. {'Cycle time delays are pushing closed-won dates out of the quarter.' if mod_cycle > 10 else 'Falling win rates are bleeding pipeline value.'}")
-
-    st.divider()
 
     st.markdown('<div class="section-header">📈 PROJECTED OUTCOMES</div>', unsafe_allow_html=True)
     r1, r2, r3, r4 = st.columns(4)
@@ -732,7 +827,8 @@ def render_revenue(db,stats,sim,pm,period,current,rep_name=None,
             x=fv, textinfo="value+percent initial",
             marker=dict(color=c,line=dict(width=1,color="rgba(255,255,255,0.1)")),
             connector=dict(line=dict(color="rgba(148,163,184,0.15)",width=1,dash="dot"))))
-        fig.update_layout(**PL,height=380,showlegend=False)
+        pl_funnel = {**PL, "margin": dict(l=140,r=20,t=36,b=40)}
+        fig.update_layout(**pl_funnel,height=380,showlegend=False)
         st.plotly_chart(fig, use_container_width=True, theme=None)
 
     # Forecast — dynamic per rep
@@ -762,7 +858,8 @@ def render_revenue(db,stats,sim,pm,period,current,rep_name=None,
             marker_color="#38bdf8",text=[f'{fmtr(s["value"]*s["probability"])} ({s["probability"]*100:.0f}%)' for s in scaled_stages],
             textfont=dict(color="#0f172a", family="Inter", weight="bold"),
             textposition="inside"))
-        fig.update_layout(**PL,height=300,barmode="overlay",legend=dict(orientation="h",y=1.12),
+        pl_fc = {**PL, "margin": dict(l=140,r=20,t=36,b=40)}
+        fig.update_layout(**pl_fc,height=300,barmode="overlay",legend=dict(orientation="h",y=1.12),
                           yaxis=dict(autorange="reversed"))
         st.plotly_chart(fig, use_container_width=True, theme=None)
     with f2:
@@ -1225,7 +1322,8 @@ def render_pipeline_analytics(db,stats,sim,pm,period,current=None,rep_name=None,
             marker_color=colors,name="Actual",text=[f'{v["avg_days"]}d (tgt: {v["target_days"]}d)' for v in dynamic_vel],textposition="auto"))
         fig.add_trace(go.Scatter(y=[v["stage"] for v in dynamic_vel],x=[v["target_days"] for v in dynamic_vel],mode="markers",
             marker=dict(symbol="line-ns",size=20,color="#cbd5e1",line_width=2),name="Target"))
-        fig.update_layout(**PL,height=380,yaxis=dict(autorange="reversed"),xaxis_title="Days",
+        pl_vel = {**PL, "margin": dict(l=140,r=20,t=36,b=40)}
+        fig.update_layout(**pl_vel,height=380,yaxis=dict(autorange="reversed"),xaxis_title="Days",
                           legend=dict(orientation="h",y=1.12))
         st.plotly_chart(fig, use_container_width=True, theme=None)
     st.divider()
@@ -1255,7 +1353,8 @@ def render_pipeline_analytics(db,stats,sim,pm,period,current=None,rep_name=None,
             textfont=dict(color="#0f172a", family="Inter", weight="bold"),
             textposition="inside"))
         fig.add_vline(x=250000,line_dash="dash",line_color="#cbd5e1",annotation_text="$250K Quota", annotation_font_color="#cbd5e1")
-        fig.update_layout(**PL,height=350,xaxis_title="Pipeline ($)")
+        pl_sdr = {**PL, "margin": dict(l=140,r=20,t=36,b=40)}
+        fig.update_layout(**pl_sdr,height=350,xaxis_title="Pipeline ($)")
         st.plotly_chart(fig, use_container_width=True, theme=None)
     _footer()
 
