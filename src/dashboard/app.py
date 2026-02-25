@@ -102,7 +102,7 @@ FLAGS = {"US":"🇺🇸","BR":"🇧🇷","UK":"🇬🇧","DE":"🇩🇪","FR":"�
          "AU":"🇦🇺","CA":"🇨🇦","NL":"🇳🇱","SE":"🇸🇪","IN":"🇮🇳","JP":"🇯🇵","KR":"🇰🇷"}
 PL = dict(plot_bgcolor="rgba(0,0,0,0)",paper_bgcolor="rgba(0,0,0,0)",
           font=dict(color="#94a3b8",family="Inter",size=11),margin=dict(l=40,r=20,t=36,b=40),
-          hoverlabel=dict(bgcolor="#1e293b",font=dict(size=12,family="Inter",color="#f8fafc"),bordercolor="#475569"))
+          hoverlabel=dict(bgcolor="rgba(15,20,35,0.95)",font=dict(size=12,family="Inter",color="#f8fafc"),bordercolor="rgba(148,163,184,0.3)"))
 
 def fmtr(v):
     if v>=1e9: return f"${v/1e9:.1f}B"
@@ -381,9 +381,7 @@ def render_post_sales(psm):
         fig = go.Figure(data=[go.Pie(
             labels=h_labels, values=h_vals, hole=.6,
             marker=dict(colors=h_colors, line=dict(color='rgba(15,23,42,1)', width=2)),
-            textinfo="label+value",
-            insidetextfont=dict(color="#000000", family="Inter", weight="bold"),
-            outsidetextfont=dict(color="#f8fafc", family="Inter")
+            textinfo="label+value"
         )])
         
         # Merge the global PL dict but override the margin for this specific pie chart
@@ -730,14 +728,11 @@ def render_revenue(db,stats,sim,pm,period,current,rep_name=None):
         fig = go.Figure()
         fig.add_trace(go.Bar(y=[s["stage"] for s in scaled_stages],x=[s["value"] for s in scaled_stages],
             orientation="h",name="Unweighted",marker_color="rgba(56,189,248,0.2)",
-            text=[fmtr(s["value"]) for s in scaled_stages],
-            textfont=dict(color="#f8fafc", family="Inter", weight="bold"),
-            textposition="auto"))
+            text=[fmtr(s["value"]) for s in scaled_stages],textposition="auto"))
         fig.add_trace(go.Bar(y=[s["stage"] for s in scaled_stages],
             x=[s["value"]*s["probability"] for s in scaled_stages],orientation="h",name="Weighted",
             marker_color="#38bdf8",text=[f'{fmtr(s["value"]*s["probability"])} ({s["probability"]*100:.0f}%)' for s in scaled_stages],
-            textfont=dict(color="#000000", family="Inter", weight="heavy"),
-            textposition="inside"))
+            textposition="auto"))
         fig.update_layout(**PL,height=300,barmode="overlay",legend=dict(orientation="h",y=1.12),
                           yaxis=dict(autorange="reversed"))
         st.plotly_chart(fig, use_container_width=True)
@@ -1221,10 +1216,8 @@ def render_pipeline_analytics(db,stats,sim,pm,period,current=None,rep_name=None)
     with l2:
         fig=go.Figure(go.Bar(y=[s["name"] for s in sdr[::-1]],x=[s["pipeline_generated"] for s in sdr[::-1]],
             orientation="h",marker=dict(color=["#22c55e" if s["attainment"]>=100 else "#eab308" if s["attainment"]>=70 else "#ef4444" for s in sdr[::-1]]),
-            text=[f'{s["attainment"]}%' for s in sdr[::-1]],
-            textfont=dict(color="#0f172a", family="Inter", weight="bold"),
-            textposition="auto"))
-        fig.add_vline(x=250000,line_dash="dash",line_color="#475569",annotation_text="$250K Quota", annotation_font_color="#475569")
+            text=[f'{s["attainment"]}%' for s in sdr[::-1]],textposition="auto"))
+        fig.add_vline(x=250000,line_dash="dash",line_color="#f1f5f9",annotation_text="$250K Quota")
         fig.update_layout(**PL,height=350,xaxis_title="Pipeline ($)")
         st.plotly_chart(fig, use_container_width=True)
     _footer()
