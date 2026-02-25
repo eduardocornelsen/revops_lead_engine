@@ -195,7 +195,7 @@ def main():
     ANALYTICS_PAGES = {"📊 Revenue Dashboard","💼 CRM / Salesforce","📈 Pipeline Analytics","📧 Outreach"}
     show_filters = page in ANALYTICS_PAGES
 
-    # ── Top Filter Bar (only on analytics pages EXCEPT Revenue Dashboard, which renders its own) ──────
+    # ── Top Filter Bar (only on analytics pages) ──────
     min_d, max_d = get_daily_date_range(sim["daily"])
     from datetime import timedelta
 
@@ -205,10 +205,6 @@ def main():
         st.session_state["sd"] = max_d - timedelta(days=29)
         st.session_state["ed"] = max_d
         st.session_state["rep"] = "🏢 Whole Team"
-
-    # Revenue Dashboard renders the filter bar itself (below the title)
-    # Other analytics pages get it here at the top
-    render_filter_here = show_filters and page != "📊 Revenue Dashboard"
 
     if show_filters:
         def on_preset_change():
@@ -229,25 +225,20 @@ def main():
             st.session_state["ed"] = max_d
             st.session_state["rep"] = "🏢 Whole Team"
 
-        if render_filter_here:
-            tf1, tf2, tf3, tf_reset, tf4 = st.columns([1.1, 1.1, 1.3, 0.8, 1.5])
-            with tf1:
-                start_date = st.date_input("📅 From", min_value=min_d, max_value=max_d, key="sd")
-            with tf2:
-                end_date = st.date_input("📅 To", min_value=min_d, max_value=max_d, key="ed")
-            with tf3:
-                preset = st.selectbox("Period", ["Custom","Last 30 Days","Last 60 Days","Full Quarter"],
-                                      key="preset", on_change=on_preset_change)
-            with tf_reset:
-                st.markdown("<div style='margin-top:28px'></div>", unsafe_allow_html=True)
-                st.button("🔄 Reset", on_click=reset_date_filters, use_container_width=True)
-            with tf4:
-                rep_options = ["🏢 Whole Team"] + [f"👤 {n}" for n in SDR_NAMES]
-                selected_rep = st.selectbox("👤 Sales Rep", rep_options, key="rep")
-        else:
-            start_date = st.session_state.get("sd", max_d - timedelta(days=29))
-            end_date = st.session_state.get("ed", max_d)
-            selected_rep = st.session_state.get("rep", "🏢 Whole Team")
+        tf1, tf2, tf3, tf_reset, tf4 = st.columns([1.1, 1.1, 1.3, 0.8, 1.5])
+        with tf1:
+            start_date = st.date_input("📅 From", min_value=min_d, max_value=max_d, key="sd")
+        with tf2:
+            end_date = st.date_input("📅 To", min_value=min_d, max_value=max_d, key="ed")
+        with tf3:
+            preset = st.selectbox("Period", ["Custom","Last 30 Days","Last 60 Days","Full Quarter"],
+                                  key="preset", on_change=on_preset_change)
+        with tf_reset:
+            st.markdown("<div style='margin-top:28px'></div>", unsafe_allow_html=True)
+            st.button("🔄 Reset", on_click=reset_date_filters, use_container_width=True)
+        with tf4:
+            rep_options = ["🏢 Whole Team"] + [f"👤 {n}" for n in SDR_NAMES]
+            selected_rep = st.selectbox("👤 Sales Rep", rep_options, key="rep")
     else:
         start_date = st.session_state.get("sd", max_d - timedelta(days=29))
         end_date = st.session_state.get("ed", max_d)
@@ -263,11 +254,7 @@ def main():
         period_label += f" · {rep_name}"
     pm = compute_period_metrics(current, previous, is_individual_rep=not is_whole_team)
 
-    if   page=="📊 Revenue Dashboard":   render_revenue(db,stats,sim,pm,period_label,current,rep_name,
-                                                              start_date,end_date,min_d,max_d,
-                                                              on_preset_change if show_filters else None,
-                                                              reset_date_filters if show_filters else None,
-                                                              SDR_NAMES)
+    if   page=="📊 Revenue Dashboard":   render_revenue(db,stats,sim,pm,period_label,current,rep_name)
     elif page=="⚡ Generate Leads":      render_generate_leads(db,stats)
     elif page=="🔍 Lead Intelligence":   render_lead_intelligence(db,stats)
     elif page=="🧭 Sales Navigator":     render_sales_navigator(db,stats)
@@ -514,39 +501,40 @@ def render_scenario_modeler(pm, rep_name=None):
 # ══════════════════════════════════════════════════════
 # 1. REVENUE DASHBOARD
 # ══════════════════════════════════════════════════════
-def render_revenue(db,stats,sim,pm,period,current,rep_name=None,
-                   start_date=None,end_date=None,min_d=None,max_d=None,
-                   on_preset_change=None,reset_date_filters=None,SDR_NAMES_=None):
+def render_revenue(db,stats,sim,pm,period,current,rep_name=None):
     from src.dashboard.sim_metrics import generate_forecast
     fc = generate_forecast(pm["active_pipeline"])
-    title_suffix = f" — {rep_name}" if rep_name else ""
     st.markdown("## Revenue Dashboard")
     date_banner(period, pm)
 
-    # ── Inline filter bar (date + rep) ─────────────────────────────────────
-    if on_preset_change is not None:
-        tf1, tf2, tf3, tf_reset, tf4 = st.columns([1.1, 1.1, 1.3, 0.8, 1.5])
-        with tf1:
-            st.date_input("📅 From", min_value=min_d, max_value=max_d, key="sd")
-        with tf2:
-            st.date_input("📅 To", min_value=min_d, max_value=max_d, key="ed")
-        with tf3:
-            st.selectbox("Period", ["Custom","Last 30 Days","Last 60 Days","Full Quarter"],
-                         key="preset", on_change=on_preset_change)
-        with tf_reset:
-            st.markdown("<div style='margin-top:28px'></div>", unsafe_allow_html=True)
-            st.button("🔄 Reset", on_click=reset_date_filters, use_container_width=True)
-        with tf4:
-            import __main__ as _m
-            rep_options = ["🏢 Whole Team"] + [f"👤 {n}" for n in (SDR_NAMES_ or [])]
-            st.selectbox("👤 Sales Rep", rep_options, key="rep")
-        st.divider()
+    # Group 1: Executive Health Metrics
+    st.markdown('<div class="section-header">📈 Executive Health</div>', unsafe_allow_html=True)
+    k1,k2,k3,k4 = st.columns(4)
+    with k1: st.metric("💰 REVENUE", fmtr(pm["total_revenue"]), dstr(pm["rev_delta"],pm["has_comparison"]))
+    with k2: st.metric("📊 PIPELINE", fmtr(pm["active_pipeline"]), dstr(pm.get("pipe_delta",0),pm["has_comparison"]))
+    with k3: st.metric("🎯 QUOTA", f'{pm["quota_attainment"]:.0f}%', f'Target: {fmtr(pm["revenue_target"])}')
+    with k4: st.metric("📈 COVERAGE", f'{pm["coverage_ratio"]:.1f}x', "🟢 OK" if pm["coverage_ratio"]>=3 else "🔴 Low")
 
-    # ── Quota Attainment + Executive Health ────────────────────────────────
-    st.markdown('<div class="section-header">🎯 Quota Attainment&nbsp;&nbsp;·&nbsp;&nbsp;📈 Executive Health</div>', unsafe_allow_html=True)
+    st.markdown("<div style='margin-top:20px'></div>", unsafe_allow_html=True)
 
-    qa_col, health_cols = st.columns([1, 3])
-    with qa_col:
+    # Group 2: Sales Engine Tactical Metrics
+    st.markdown('<div class="section-header">⚡ Sales Engine</div>', unsafe_allow_html=True)
+    k7,k8,k9,k10,k11,k12 = st.columns(6)
+    with k7:  st.metric("📥 LEADS", fmtn(pm["total_leads"]), dstr(pm["leads_delta"],pm["has_comparison"]))
+    with k8:  st.metric("✅ QUALIFIED", fmtn(pm["total_qualified"]), dstr(pm["qual_delta"],pm["has_comparison"]))
+    with k9:  st.metric("📅 MEETINGS", fmtn(pm["total_meetings"]), dstr(pm["meetings_delta"],pm["has_comparison"]))
+    with k10: st.metric("🤝 DEALS WON", fmtn(pm["total_deals"]), dstr(pm["deals_delta"],pm["has_comparison"]))
+    with k11: st.metric("🏆 WIN RATE", f'{pm["win_rate"]:.1f}%', dstr(pm.get("win_delta",0),pm["has_comparison"]))
+    with k12: st.metric("⏱️ CYCLE", f'{pm["avg_cycle_days"]}d', dstr(pm.get("cycle_delta",0),pm["has_comparison"]))
+
+    st.divider()
+
+    # Unit Economics + Quota Gauge + Alerts
+    g1,g2,g3 = st.columns(3)
+
+    with g1:
+        label = f"🎯 Quota — {rep_name}" if rep_name else "🎯 Quota Attainment"
+        st.markdown(f"### {label}")
         att = pm["quota_attainment"]
         fig = go.Figure(go.Indicator(
             mode="gauge+number+delta", value=att,
@@ -561,6 +549,7 @@ def render_revenue(db,stats,sim,pm,period,current,rep_name=None,
                    "threshold":{"line":{"color":"#f1f5f9","width":2},"thickness":.8,"value":100}}))
         fig.update_layout(**PL, height=240)
         st.plotly_chart(fig, use_container_width=True, theme=None)
+        # $ amount below the gauge
         rev_c = "#22c55e" if att >= 100 else "#eab308" if att >= 70 else "#ef4444"
         st.markdown(
             f'<div style="text-align:center;margin-top:-10px;">'
@@ -568,86 +557,71 @@ def render_revenue(db,stats,sim,pm,period,current,rep_name=None,
             f' <span style="color:#64748b;font-size:.85em;">of {fmtr(pm["quota_target_amount"])} target</span>'
             f'</div>', unsafe_allow_html=True)
 
-    with health_cols:
-        k1,k2,k3,k4 = st.columns(4)
-        with k1: st.metric("💰 REVENUE", fmtr(pm["total_revenue"]), dstr(pm["rev_delta"],pm["has_comparison"]))
-        with k2: st.metric("📊 PIPELINE", fmtr(pm["active_pipeline"]), dstr(pm.get("pipe_delta",0),pm["has_comparison"]))
-        with k3: st.metric("🎯 QUOTA", f'{pm["quota_attainment"]:.0f}%', f'Target: {fmtr(pm["revenue_target"])}')
-        with k4: st.metric("📈 COVERAGE", f'{pm["coverage_ratio"]:.1f}x', "🟢 OK" if pm["coverage_ratio"]>=3 else "🔴 Low")
+    with g2:
+        econ_label = f"💲 Unit Economics — {rep_name}" if rep_name else "💲 Unit Economics"
+        st.markdown(f"### {econ_label}")
+        st.markdown("")
+        ue1,ue2 = st.columns(2)
+        with ue1:
+            st.metric("Customer Acquisition Cost", fmtr(pm["cac"]) if pm["total_deals"] > 0 else "N/A", help="Total Marketing & SDR Spend ÷ Total Deals Won")
+            st.metric("Lifetime Value", fmtr(pm["ltv"]) if pm["total_deals"] > 0 else "N/A", help="Est. 2.8x Expansion Multiplier over 3 years")
+        with ue2:
+            st.metric("LTV : CAC Ratio", f'{pm["ltv_cac_ratio"]:.1f}x', help="Target B2B SaaS benchmark is > 3.0x")
+            st.metric("Total Ad Spend", fmtr(pm["total_spend"]))
 
-        st.markdown("<div style='margin-top:14px'></div>", unsafe_allow_html=True)
-        k7,k8,k9,k10,k11,k12 = st.columns(6)
-        with k7:  st.metric("📥 LEADS", fmtn(pm["total_leads"]), dstr(pm["leads_delta"],pm["has_comparison"]))
-        with k8:  st.metric("✅ QUALIFIED", fmtn(pm["total_qualified"]), dstr(pm["qual_delta"],pm["has_comparison"]))
-        with k9:  st.metric("📅 MEETINGS", fmtn(pm["total_meetings"]), dstr(pm["meetings_delta"],pm["has_comparison"]))
-        with k10: st.metric("🤝 DEALS WON", fmtn(pm["total_deals"]), dstr(pm["deals_delta"],pm["has_comparison"]))
-        with k11: st.metric("🏆 WIN RATE", f'{pm["win_rate"]:.1f}%', dstr(pm.get("win_delta",0),pm["has_comparison"]))
-        with k12: st.metric("⏱️ CYCLE", f'{pm["avg_cycle_days"]}d', dstr(pm.get("cycle_delta",0),pm["has_comparison"]))
-
-    st.divider()
-
-    # ── Risk Alerts ────────────────────────────────────────────────────────
-    alert_label = f"🚨 Risk Alerts — {rep_name}" if rep_name else "🚨 Risk Alerts"
-    st.markdown(f'<div class="section-header">{alert_label}</div>', unsafe_allow_html=True)
-    dyn_alerts = []
-    if pm["quota_attainment"] < 70:
-        dyn_alerts.append({"severity":"high","icon":"🔴","type":"Below Quota",
-            "message":f'At {pm["quota_attainment"]:.0f}% — {fmtr(pm["quota_target_amount"] - pm["quota_revenue"])} gap to target',
-            "action":"Accelerate pipeline, review stalled deals"})
-    elif pm["quota_attainment"] < 100:
-        dyn_alerts.append({"severity":"medium","icon":"🟡","type":"Quota at Risk",
-            "message":f'At {pm["quota_attainment"]:.0f}% — {fmtr(pm["quota_target_amount"] - pm["quota_revenue"])} remaining',
-            "action":"Focus on late-stage deals, push for close"})
-    else:
-        dyn_alerts.append({"severity":"low","icon":"🟢","type":"Quota Exceeded",
-            "message":f'At {pm["quota_attainment"]:.0f}% — {fmtr(pm["quota_revenue"] - pm["quota_target_amount"])} over target',
-            "action":"Maintain momentum, build pipeline for next quarter"})
-    if pm["coverage_ratio"] < 3:
-        dyn_alerts.append({"severity":"high","icon":"🔴","type":"Low Coverage",
-            "message":f'Coverage ratio at {pm["coverage_ratio"]:.1f}x — below 3x minimum',
-            "action":"Increase outbound volume or add new pipeline source"})
-    if pm["win_rate"] < 15:
-        dyn_alerts.append({"severity":"medium","icon":"🟡","type":"Low Win Rate",
-            "message":f'Win rate at {pm["win_rate"]:.1f}% — below 15% threshold',
-            "action":"Review qualification criteria, improve discovery"})
-    if pm["conversion_rate"] > 30:
-        dyn_alerts.append({"severity":"low","icon":"🟢","type":"Strong Conversion",
-            "message":f'Lead→Qualified at {pm["conversion_rate"]:.1f}% — above 30% benchmark',
-            "action":"Scale campaign spend to capitalize on momentum"})
-    if pm["ltv_cac_ratio"] > 3:
-        dyn_alerts.append({"severity":"low","icon":"🟢","type":"Healthy Unit Economics",
-            "message":f'LTV:CAC at {pm["ltv_cac_ratio"]:.1f}x — above 3x benchmark',
-            "action":"Room to increase acquisition spend"})
-    al1, al2, al3 = st.columns(3)
-    for idx, a in enumerate(dyn_alerts[:3]):
-        severity_class = f"alert-{a['severity']}"
-        html = f"""
-        <div class="alert-card {severity_class}">
-            <div class="icon">{a['icon']}</div>
-            <div class="content">
-                <h4>{a['type']}</h4>
-                <p>{a['message']}</p>
-                <div class="action">{a['action']}</div>
+    with g3:
+        alert_label = f"🚨 Alerts — {rep_name}" if rep_name else "🚨 Risk Alerts"
+        st.markdown(f"### {alert_label}")
+        # Dynamic alerts based on actual pm data
+        dyn_alerts = []
+        if pm["quota_attainment"] < 70:
+            dyn_alerts.append({"severity":"high","icon":"🔴","type":"Below Quota",
+                "message":f'At {pm["quota_attainment"]:.0f}% — {fmtr(pm["quota_target_amount"] - pm["quota_revenue"])} gap to target',
+                "action":"Accelerate pipeline, review stalled deals"})
+        elif pm["quota_attainment"] < 100:
+            dyn_alerts.append({"severity":"medium","icon":"🟡","type":"Quota at Risk",
+                "message":f'At {pm["quota_attainment"]:.0f}% — {fmtr(pm["quota_target_amount"] - pm["quota_revenue"])} remaining',
+                "action":"Focus on late-stage deals, push for close"})
+        else:
+            dyn_alerts.append({"severity":"low","icon":"🟢","type":"Quota Exceeded",
+                "message":f'At {pm["quota_attainment"]:.0f}% — {fmtr(pm["quota_revenue"] - pm["quota_target_amount"])} over target',
+                "action":"Maintain momentum, build pipeline for next quarter"})
+        if pm["coverage_ratio"] < 3:
+            dyn_alerts.append({"severity":"high","icon":"🔴","type":"Low Coverage",
+                "message":f'Coverage ratio at {pm["coverage_ratio"]:.1f}x — below 3x minimum',
+                "action":"Increase outbound volume or add new pipeline source"})
+        if pm["win_rate"] < 15:
+            dyn_alerts.append({"severity":"medium","icon":"🟡","type":"Low Win Rate",
+                "message":f'Win rate at {pm["win_rate"]:.1f}% — below 15% threshold',
+                "action":"Review qualification criteria, improve discovery"})
+        if pm["conversion_rate"] > 30:
+            dyn_alerts.append({"severity":"low","icon":"🟢","type":"Strong Conversion",
+                "message":f'Lead→Qualified at {pm["conversion_rate"]:.1f}% — above 30% benchmark',
+                "action":"Scale campaign spend to capitalize on momentum"})
+        if pm["ltv_cac_ratio"] > 3:
+            dyn_alerts.append({"severity":"low","icon":"🟢","type":"Healthy Unit Economics",
+                "message":f'LTV:CAC at {pm["ltv_cac_ratio"]:.1f}x — above 3x benchmark',
+                "action":"Room to increase acquisition spend"})
+        for a in dyn_alerts[:3]:  # Top 3
+            severity_class = f"alert-{a['severity']}"
+            html = f"""
+            <div class="alert-card {severity_class}">
+                <div class="icon">{a['icon']}</div>
+                <div class="content">
+                    <h4>{a['type']}</h4>
+                    <p>{a['message']}</p>
+                    <div class="action">{a['action']}</div>
+                </div>
             </div>
-        </div>
-        """
-        [al1, al2, al3][idx].markdown(html, unsafe_allow_html=True)
+            """
+            st.markdown(html, unsafe_allow_html=True)
 
     st.divider()
 
-    # ── Unit Economics ─────────────────────────────────────────────────────
-    econ_label = f"💲 Unit Economics — {rep_name}" if rep_name else "💲 Unit Economics"
-    st.markdown(f'<div class="section-header">{econ_label}</div>', unsafe_allow_html=True)
-    ue1,ue2,ue3,ue4 = st.columns(4)
-    with ue1: st.metric("Customer Acquisition Cost", fmtr(pm["cac"]) if pm["total_deals"] > 0 else "N/A", help="Total Marketing & SDR Spend ÷ Total Deals Won")
-    with ue2: st.metric("Lifetime Value", fmtr(pm["ltv"]) if pm["total_deals"] > 0 else "N/A", help="Est. 2.8x Expansion Multiplier over 3 years")
-    with ue3: st.metric("LTV : CAC Ratio", f'{pm["ltv_cac_ratio"]:.1f}x', help="Target B2B SaaS benchmark is > 3.0x")
-    with ue4: st.metric("Total Ad Spend", fmtr(pm["total_spend"]))
-
-    st.divider()
-
+    # Revenue Trend + Funnel
     c1,c2 = st.columns([3,2])
     with c1:
+        title_suffix = f" — {rep_name}" if rep_name else ""
         st.markdown(f"### 📈 Revenue & Pipeline Trend{title_suffix}")
         
         # Trend Controls
@@ -724,14 +698,15 @@ def render_revenue(db,stats,sim,pm,period,current,rep_name=None,
 
     with c2:
         st.markdown(f"### Lead Funnel & Conversion{title_suffix}")
+        # Dynamic funnel from period-filtered metrics
         fv = [pm["total_leads"], pm["total_qualified"], pm["total_meetings"], pm["total_deals"]]
+        # Modern gradient mapped to funnel stages
         c = ["#3b82f6","#6366f1","#8b5cf6","#ec4899"]
         fig = go.Figure(go.Funnel(y=["Leads Generated","Qualified","Meetings","Deals Won"],
             x=fv, textinfo="value+percent initial",
             marker=dict(color=c,line=dict(width=1,color="rgba(255,255,255,0.1)")),
             connector=dict(line=dict(color="rgba(148,163,184,0.15)",width=1,dash="dot"))))
-        pl_funnel = {**PL, "margin": dict(l=130,r=20,t=36,b=40)}
-        fig.update_layout(**pl_funnel,height=380,showlegend=False)
+        fig.update_layout(**PL,height=380,showlegend=False)
         st.plotly_chart(fig, use_container_width=True, theme=None)
 
     # Forecast — dynamic per rep
@@ -761,8 +736,7 @@ def render_revenue(db,stats,sim,pm,period,current,rep_name=None,
             marker_color="#38bdf8",text=[f'{fmtr(s["value"]*s["probability"])} ({s["probability"]*100:.0f}%)' for s in scaled_stages],
             textfont=dict(color="#0f172a", family="Inter", weight="bold"),
             textposition="inside"))
-        pl_fc = {**PL, "margin": dict(l=130,r=20,t=36,b=40)}
-        fig.update_layout(**pl_fc,height=300,barmode="overlay",legend=dict(orientation="h",y=1.12),
+        fig.update_layout(**PL,height=300,barmode="overlay",legend=dict(orientation="h",y=1.12),
                           yaxis=dict(autorange="reversed"))
         st.plotly_chart(fig, use_container_width=True, theme=None)
     with f2:
