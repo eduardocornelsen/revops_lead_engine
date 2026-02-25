@@ -736,7 +736,7 @@ def render_revenue(db,stats,sim,pm,period,current,rep_name=None):
         fig.add_trace(go.Bar(y=[s["stage"] for s in scaled_stages],
             x=[s["value"]*s["probability"] for s in scaled_stages],orientation="h",name="Weighted",
             marker_color="#38bdf8",text=[f'{fmtr(s["value"]*s["probability"])} ({s["probability"]*100:.0f}%)' for s in scaled_stages],
-            textfont=dict(color="#0f172a", family="Inter", weight="heavy"),
+            textfont=dict(color="#0f172a", family="Inter", weight="bold"),
             textposition="inside"))
         fig.update_layout(**PL,height=300,barmode="overlay",legend=dict(orientation="h",y=1.12),
                           yaxis=dict(autorange="reversed"))
@@ -1222,7 +1222,7 @@ def render_pipeline_analytics(db,stats,sim,pm,period,current=None,rep_name=None)
         fig=go.Figure(go.Bar(y=[s["name"] for s in sdr[::-1]],x=[s["pipeline_generated"] for s in sdr[::-1]],
             orientation="h",marker=dict(color=["#22c55e" if s["attainment"]>=100 else "#eab308" if s["attainment"]>=70 else "#ef4444" for s in sdr[::-1]]),
             text=[f'{s["attainment"]}%' for s in sdr[::-1]],
-            textfont=dict(color="#0f172a", family="Inter", weight="heavy"),
+            textfont=dict(color="#0f172a", family="Inter", weight="bold"),
             textposition="inside"))
         fig.add_vline(x=250000,line_dash="dash",line_color="#cbd5e1",annotation_text="$250K Quota", annotation_font_color="#cbd5e1")
         fig.update_layout(**PL,height=350,xaxis_title="Pipeline ($)")
