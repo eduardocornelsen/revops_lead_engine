@@ -77,6 +77,13 @@ section[data-testid="stSidebar"] .stSlider label,section[data-testid="stSidebar"
 color:#64748b!important;font-size:.7rem!important;text-transform:uppercase;letter-spacing:.8px}
 .stDataFrame{border-radius:12px;overflow:hidden}.stMarkdown a[href^="#"]{display:none!important}
 .dash-footer{text-align:center;color:#475569;padding:16px;font-size:.78rem;border-top:1px solid rgba(233,69,96,0.1);margin-top:40px}
+/* ── Permanently lock Plotly text colors (prevents Streamlit Cloud theme override) ── */
+.js-plotly-plot .plotly .gtitle, .js-plotly-plot .plotly .xtitle, .js-plotly-plot .plotly .ytitle { fill: #94a3b8 !important; }
+.js-plotly-plot .plotly .xtick text, .js-plotly-plot .plotly .ytick text { fill: #94a3b8 !important; }
+.js-plotly-plot .plotly .legend text { fill: #94a3b8 !important; }
+.js-plotly-plot .plotly .hoverlayer .hovertext text { fill: #f8fafc !important; }
+.js-plotly-plot .plotly .hoverlayer .hovertext path { fill: #1e293b !important; stroke: #475569 !important; }
+.js-plotly-plot .plotly g.infolayer text { fill: #94a3b8 !important; }
 </style>
 """, unsafe_allow_html=True)
 
