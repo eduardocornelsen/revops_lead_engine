@@ -18,7 +18,7 @@
 <br><br>
 
   <p align="center">
-    <a href="https://revops-lead-engine.streamlit.app/"><img src="https://img.shields.io/badge/🚀_LIVE_DEMO-Click_to_Launch-00C853?style=for-the-badge&logoColor=white" alt="Live Demo"/></a>
+    <a href="https://revops-lead-engine.streamlit.app/"><img src="https://img.shields.io/badge/🚀_LIVE_DEMO-Click_to_Launch-ff4b4b?style=for-the-badge&logoColor=white" alt="Live Demo"/></a>
   </p>
 </p>
 
