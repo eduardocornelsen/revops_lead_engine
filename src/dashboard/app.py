@@ -381,7 +381,9 @@ def render_post_sales(psm):
         fig = go.Figure(data=[go.Pie(
             labels=h_labels, values=h_vals, hole=.6,
             marker=dict(colors=h_colors, line=dict(color='rgba(15,23,42,1)', width=2)),
-            textinfo="label+value"
+            textinfo="label+value",
+            insidetextfont=dict(color="#000000", family="Inter", weight="bold"),
+            outsidetextfont=dict(color="#f8fafc", family="Inter")
         )])
         
         # Merge the global PL dict but override the margin for this specific pie chart
@@ -734,8 +736,8 @@ def render_revenue(db,stats,sim,pm,period,current,rep_name=None):
         fig.add_trace(go.Bar(y=[s["stage"] for s in scaled_stages],
             x=[s["value"]*s["probability"] for s in scaled_stages],orientation="h",name="Weighted",
             marker_color="#38bdf8",text=[f'{fmtr(s["value"]*s["probability"])} ({s["probability"]*100:.0f}%)' for s in scaled_stages],
-            textfont=dict(color="#0f172a", family="Inter", weight="bold"),
-            textposition="auto"))
+            textfont=dict(color="#000000", family="Inter", weight="heavy"),
+            textposition="inside"))
         fig.update_layout(**PL,height=300,barmode="overlay",legend=dict(orientation="h",y=1.12),
                           yaxis=dict(autorange="reversed"))
         st.plotly_chart(fig, use_container_width=True)
