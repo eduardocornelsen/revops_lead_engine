@@ -37,7 +37,7 @@ st.markdown("""
   0% { opacity: 0; transform: translateY(15px); }
   100% { opacity: 1; transform: translateY(0); }
 }
-.stApp{font-family:'Inter',-apple-system,sans-serif;background:linear-gradient(135deg,#000000 0%,#050810 50%,#0a101d 100%);animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;}
+.stApp{font-family:'Inter',-apple-system,sans-serif;background:linear-gradient(135deg,#020617 0%,#0f172a 50%,#1e3a8a 100%);animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;}
 div[data-testid="stMetric"]{background:linear-gradient(145deg,rgba(15,20,35,0.7),rgba(20,28,50,0.6));
 backdrop-filter:blur(16px);border:1px solid rgba(148,163,184,0.1);border-top:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:20px 24px;
 box-shadow:0 10px 30px -10px rgba(0,0,0,0.5);transition:all .3s cubic-bezier(0.4,0,0.2,1)}
