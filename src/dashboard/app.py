@@ -369,7 +369,7 @@ def render_post_sales(psm):
             totals={"marker":{"color":"#6366f1"}}
         ))
         fig.update_layout(**PL, height=400, showlegend=False)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
 
     with c2:
         st.markdown("### ❤️ Account Health Scores")
@@ -390,7 +390,7 @@ def render_post_sales(psm):
         pie_layout = PL.copy()
         pie_layout["margin"] = dict(t=20, b=20, l=20, r=20)
         fig.update_layout(**pie_layout, height=400, showlegend=False)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
         
         # Risk ARR Summary inline
         st.markdown(f"""
@@ -493,7 +493,7 @@ def render_scenario_modeler(pm, rep_name=None):
                       yaxis_title="Cumulative Pipeline Revenue ($)",
                       xaxis_title="Days Forward (Next 90 Days)",
                       legend=dict(orientation="h", y=1.12, x=0.0))
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, theme=None)
 
 
 
@@ -548,7 +548,7 @@ def render_revenue(db,stats,sim,pm,period,current,rep_name=None):
                             {"range":[100,150],"color":"rgba(16,185,129,0.08)"}],
                    "threshold":{"line":{"color":"#f1f5f9","width":2},"thickness":.8,"value":100}}))
         fig.update_layout(**PL, height=240)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
         # $ amount below the gauge
         rev_c = "#22c55e" if att >= 100 else "#eab308" if att >= 70 else "#ef4444"
         st.markdown(
@@ -694,7 +694,7 @@ def render_revenue(db,stats,sim,pm,period,current,rep_name=None):
                 line=dict(color="#ef4444", width=2, dash="dash")))
 
         fig.update_layout(**PL,height=380,showlegend=True,legend=dict(orientation="h",y=1.12))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
 
     with c2:
         st.markdown(f"### Lead Funnel & Conversion{title_suffix}")
@@ -707,7 +707,7 @@ def render_revenue(db,stats,sim,pm,period,current,rep_name=None):
             marker=dict(color=c,line=dict(width=1,color="rgba(255,255,255,0.1)")),
             connector=dict(line=dict(color="rgba(148,163,184,0.15)",width=1,dash="dot"))))
         fig.update_layout(**PL,height=380,showlegend=False)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
 
     # Forecast — dynamic per rep
     st.markdown(f"### 📊 Revenue Forecast{title_suffix}")
@@ -738,7 +738,7 @@ def render_revenue(db,stats,sim,pm,period,current,rep_name=None):
             textposition="inside"))
         fig.update_layout(**PL,height=300,barmode="overlay",legend=dict(orientation="h",y=1.12),
                           yaxis=dict(autorange="reversed"))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
     with f2:
         best = sum(s["value"] for s in scaled_stages if s["probability"]>=0.25)
         weighted = sum(s["value"]*s["probability"] for s in scaled_stages)
@@ -1077,7 +1077,7 @@ def render_crm(sim,pm,period,start_date=None,end_date=None,rep_name=None):
             text=[f'{fmtr(v)} ({stage_counts[s]} deals)' for s,v in stage_vals.items()],textposition="auto",
             marker_color=["#e94560","#c33b54","#a855f7","#6366f1","#3b82f6","#22c55e","#10b981","#ef4444"]))
         fig.update_layout(**PL,height=380,yaxis=dict(autorange="reversed"),xaxis_title="Value ($)")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
 
     with c2:
         st.markdown("### ⏱️ Deal Aging (Days Open)")
@@ -1089,7 +1089,7 @@ def render_crm(sim,pm,period,start_date=None,end_date=None,rep_name=None):
             text=[f'{o["age_days"]}d · {o["stage"]}' for o in open_sorted],textposition="auto"))
         fig.add_vline(x=30,line_dash="dash",line_color="#eab308",annotation_text="30d target")
         fig.update_layout(**PL,height=380,yaxis=dict(autorange="reversed"),xaxis_title="Days")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
 
     st.divider()
 
@@ -1119,7 +1119,7 @@ def render_crm(sim,pm,period,start_date=None,end_date=None,rep_name=None):
         fig = go.Figure(go.Pie(labels=labels,values=vals,hole=.55,
             marker=dict(colors=["#22c55e","#6366f1","#ef4444"]),textinfo="label+value"))
         fig.update_layout(**PL,height=300,showlegend=True)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
 
     with w2:
         st.markdown("### 👤 Pipeline by Owner")
@@ -1132,7 +1132,7 @@ def render_crm(sim,pm,period,start_date=None,end_date=None,rep_name=None):
             orientation="h",marker_color="#a855f7",
             text=[fmtr(o[1]) for o in sorted_owners[::-1]],textposition="auto"))
         fig.update_layout(**PL,height=300,xaxis_title="Pipeline ($)")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
     _footer()
 
 
@@ -1161,7 +1161,7 @@ def render_pipeline_analytics(db,stats,sim,pm,period,current=None,rep_name=None)
             decreasing=dict(marker=dict(color="#f43f5e")),increasing=dict(marker=dict(color="#10b981")),
             totals=dict(marker=dict(color="#6366f1"))))
         fig.update_layout(**PL,height=380)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
 
     with c2:
         st.markdown("### ⏱️ Stage Velocity (Avg Days)")
@@ -1195,7 +1195,7 @@ def render_pipeline_analytics(db,stats,sim,pm,period,current=None,rep_name=None)
             marker=dict(symbol="line-ns",size=20,color="#cbd5e1",line_width=2),name="Target"))
         fig.update_layout(**PL,height=380,yaxis=dict(autorange="reversed"),xaxis_title="Days",
                           legend=dict(orientation="h",y=1.12))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
     st.divider()
 
     st.markdown("### 🎯 Campaign Attribution & ROI")
@@ -1224,7 +1224,7 @@ def render_pipeline_analytics(db,stats,sim,pm,period,current=None,rep_name=None)
             textposition="inside"))
         fig.add_vline(x=250000,line_dash="dash",line_color="#cbd5e1",annotation_text="$250K Quota", annotation_font_color="#cbd5e1")
         fig.update_layout(**PL,height=350,xaxis_title="Pipeline ($)")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
     _footer()
 
 
@@ -1264,7 +1264,7 @@ def render_outreach(db,stats,sim,pm,period,current=None):
             fig.add_trace(go.Bar(name="Opened",x=d["Touch"],y=d["Opened"],marker_color="rgba(234,179,8,0.6)"))
             fig.add_trace(go.Bar(name="Replied",x=d["Touch"],y=d["Replied"],marker_color="rgba(34,197,94,0.7)"))
             fig.update_layout(**PL,height=350,barmode="group")
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, theme=None)
     with c2:
         st.markdown("### 💬 Response Types")
         if events:
@@ -1277,7 +1277,7 @@ def render_outreach(db,stats,sim,pm,period,current=None):
                 fig=go.Figure(go.Pie(labels=list(rc.keys()),values=list(rc.values()),hole=.55,
                     marker=dict(colors=[cmap.get(k,"#64748b") for k in rc])))
                 fig.update_layout(**PL,height=350,showlegend=True)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, use_container_width=True, theme=None)
     st.divider()
 
     st.markdown("### 📈 Weekly Email Trend")
@@ -1290,7 +1290,7 @@ def render_outreach(db,stats,sim,pm,period,current=None):
     fig.add_trace(go.Scatter(x=[w["start_date"] for w in weekly],y=[w["emails_replied"] for w in weekly],
         name="Replied",line=dict(color="#22c55e",width=2)))
     fig.update_layout(**PL,height=350,legend=dict(orientation="h",y=1.12))
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, theme=None)
     _footer()
 
 
