@@ -232,44 +232,26 @@ def main():
             
             st.rerun()
         
-        # CSS to highlight the language toggle and the first radio button ("AI RevOps Copilot")
+        # CSS to highlight the language toggle button to match the premium template dashboard
         st.markdown("""
         <style>
         [data-testid="stSidebarUserContent"] div.stButton:first-of-type {
             margin-bottom: -15px;
         }
         [data-testid="stSidebarUserContent"] div.stButton:first-of-type > button {
-            background: linear-gradient(90deg, rgba(233,69,96,0.1), rgba(99,102,241,0.1));
-            border: 1px solid rgba(233,69,96,0.4);
+            background: linear-gradient(90deg, #1e1b4b 0%, #312e81 100%);
+            border: 1px solid rgba(99, 102, 241, 0.4);
             border-radius: 8px;
-            color: #f8fafc;
+            color: #f8fafc !important;
+            font-weight: 800;
+            padding: 8px 12px;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
             transition: all 0.3s ease;
         }
         [data-testid="stSidebarUserContent"] div.stButton:first-of-type > button:hover {
-            background: linear-gradient(90deg, rgba(233,69,96,0.2), rgba(99,102,241,0.2));
-            box-shadow: 0 4px 12px rgba(233, 69, 96, 0.3);
-            border-color: rgba(233,69,96,0.8);
-            transform: translateY(-1px);
-        }
-        [data-testid="stRadio"] div[role="radiogroup"] > label:first-child {
-            background: linear-gradient(90deg, #1e1b4b 0%, #312e81 100%);
-            border-radius: 8px;
-            padding: 8px 12px;
-            color: #f8fafc !important;
-            font-weight: 800;
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
-            border: 1px solid rgba(99, 102, 241, 0.4);
-            margin-bottom: 8px;
-            transition: all 0.3s ease;
-        }
-        [data-testid="stRadio"] div[role="radiogroup"] > label:first-child:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(79, 70, 229, 0.6);
             border-color: rgba(99, 102, 241, 0.8);
-        }
-        [data-testid="stRadio"] div[role="radiogroup"] > label:first-child p {
-            color: #f8fafc !important;
-            font-weight: 700 !important;
         }
         </style>
         """, unsafe_allow_html=True)
