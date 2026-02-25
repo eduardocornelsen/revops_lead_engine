@@ -584,6 +584,7 @@ class Database:
             JOIN dim_companies c ON e.company_id = c.company_id
             JOIN dim_contacts ct ON e.contact_id = ct.contact_id
             WHERE {where_clause}
+            GROUP BY ct.contact_id
             ORDER BY s.score DESC
             LIMIT ?
         """

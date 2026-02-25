@@ -22,11 +22,11 @@ def _seed():
 
 # ── Time-Series: 90-Day Pipeline Activity ─────────────
 
-def generate_daily_pipeline(days: int = 90) -> list[dict]:
-    """Simulate 90 days of pipeline activity with realistic growth."""
+def generate_daily_pipeline(days: int = 730) -> list[dict]:
+    """Simulate exactly 730 days (2 years) of pipeline activity with realistic growth."""
     _seed()
     data = []
-    base_date = datetime(2025, 12, 1)
+    base_date = datetime(2024, 2, 25)
 
     base_leads = 12
     base_revenue = 42_000
@@ -411,14 +411,16 @@ def generate_sfdc_opportunities() -> list[dict]:
 
     opps = []
     base = datetime(2026, 2, 25)
-    for i, (company, industry, country) in enumerate(companies):
-        stage_idx = int(np.random.choice(len(stages_prob), p=[0.12,0.14,0.12,0.15,0.14,0.08,0.15,0.10]))
-        stage, prob = stages_prob[stage_idx]
-        amount = round(np.random.uniform(25_000, 180_000), -3)
-        created = base - timedelta(days=int(np.random.uniform(8, 75)))
-        close_date = base + timedelta(days=int(np.random.uniform(-10, 60)))
-        age = (base - created).days
-        last_activity = base - timedelta(days=int(np.random.uniform(0, 14)))
+    for _ in range(15):  # multiply list of companies to simulate more volume over 2 years
+        for i, (company, industry, country) in enumerate(companies):
+            stage_idx = int(np.random.choice(len(stages_prob), p=[0.12,0.14,0.12,0.15,0.14,0.08,0.15,0.10]))
+            stage, prob = stages_prob[stage_idx]
+            amount = round(np.random.uniform(25_000, 180_000), -3)
+            # Spread across 730 days (2 years)
+            created = base - timedelta(days=int(np.random.uniform(8, 730)))
+            close_date = base + timedelta(days=int(np.random.uniform(-10, 60)))
+            age = (base - created).days
+            last_activity = base - timedelta(days=int(np.random.uniform(0, 14)))
 
         next_steps = {
             "Discovery": "Schedule discovery call",

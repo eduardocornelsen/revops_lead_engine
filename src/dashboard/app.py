@@ -16,6 +16,7 @@ import streamlit as st
 import plotly.graph_objects as go
 import numpy as np
 from src.config.settings import settings
+from src.dashboard.i18n import t, get_lang
 from src.database.database import Database
 from src.dashboard.sim_metrics import (
     generate_daily_pipeline, generate_revenue_metrics,
@@ -196,10 +197,60 @@ def main():
             '<span style="font-weight:800;font-size:1.15em;color:#f1f5f9;">LeadEngine</span><br/>'
             '<span style="font-size:.68rem;color:#e94560;text-transform:uppercase;letter-spacing:2px;font-weight:600;">RevOps Command Center</span>'
             '</div>', unsafe_allow_html=True)
+
+        # Language toggle
+        if "lang" not in st.session_state:
+            st.session_state["lang"] = "EN"
+        lang = st.session_state["lang"]
+        toggle_label = t("lang_toggle_label")
+        if st.button(toggle_label, key="lang_toggle", use_container_width=True):
+            # Store the current page label without the emoji prefix to find it after language change
+            cur_page_str = st.session_state.get("_nav_page", "")
+            if cur_page_str:
+                page_label = cur_page_str.split(" ", 1)[1] if " " in cur_page_str else cur_page_str
+                
+                # Find the english/portuguese equivalent label based on the current label
+                # Since we don't know the exact key, we iterate over the translations
+                from src.dashboard.i18n import TRANSLATIONS
+                current_nav_key = None
+                for key, trans in TRANSLATIONS.items():
+                    if key.startswith("nav_") and trans.get(lang) == page_label:
+                        current_nav_key = key
+                        break
+            
+            # Switch language
+            new_lang = "PT" if lang == "EN" else "EN"
+            st.session_state["lang"] = new_lang
+            
+            # Reconstruct the page string with the new language if we found the key
+            if cur_page_str and 'current_nav_key' in locals() and current_nav_key:
+                from src.dashboard.i18n import get_lang
+                # temporarily spoof get_lang by setting session state
+                translated_label = TRANSLATIONS[current_nav_key].get(new_lang, TRANSLATIONS[current_nav_key].get("EN"))
+                emoji = cur_page_str.split(" ", 1)[0]
+                st.session_state["_nav_page"] = f"{emoji} {translated_label}"
+            
+            st.rerun()
         
-        # CSS to highlight the first radio button ("AI RevOps Copilot")
+        # CSS to highlight the language toggle and the first radio button ("AI RevOps Copilot")
         st.markdown("""
         <style>
+        [data-testid="stSidebarUserContent"] div.stButton:first-of-type {
+            margin-bottom: -15px;
+        }
+        [data-testid="stSidebarUserContent"] div.stButton:first-of-type > button {
+            background: linear-gradient(90deg, rgba(233,69,96,0.1), rgba(99,102,241,0.1));
+            border: 1px solid rgba(233,69,96,0.4);
+            border-radius: 8px;
+            color: #f8fafc;
+            transition: all 0.3s ease;
+        }
+        [data-testid="stSidebarUserContent"] div.stButton:first-of-type > button:hover {
+            background: linear-gradient(90deg, rgba(233,69,96,0.2), rgba(99,102,241,0.2));
+            box-shadow: 0 4px 12px rgba(233, 69, 96, 0.3);
+            border-color: rgba(233,69,96,0.8);
+            transform: translateY(-1px);
+        }
         [data-testid="stRadio"] div[role="radiogroup"] > label:first-child {
             background: linear-gradient(90deg, #1e1b4b 0%, #312e81 100%);
             border-radius: 8px;
@@ -227,16 +278,16 @@ def main():
 
         # Premium sidebar navigation using query_params-based state
         NAV_ITEMS = [
-            ("💬", "AI RevOps Copilot"),
-            ("📊", "Revenue Dashboard"),
-            ("⚡", "Generate Leads"),
-            ("🔍", "Lead Intelligence"),
-            ("🧭", "Sales Navigator"),
-            ("💼", "CRM / Salesforce"),
-            ("📈", "Pipeline Analytics"),
-            ("📧", "Outreach"),
-            ("🏦", "Post-Sales (NDR)"),
-            ("🔮", "Scenario Modeler"),
+            ("💬", t("nav_copilot")),
+            ("📊", t("nav_revenue")),
+            ("⚡", t("nav_leads")),
+            ("🔍", t("nav_intel")),
+            ("🧭", t("nav_navigator")),
+            ("💼", t("nav_crm")),
+            ("📈", t("nav_pipeline")),
+            ("📧", t("nav_outreach")),
+            ("🏦", t("nav_postsales")),
+            ("🔮", t("nav_scenario")),
         ]
         FULL_LABELS = [f"{e} {n}" for e,n in NAV_ITEMS]
 
@@ -269,9 +320,9 @@ def main():
 
         # Render buttons and track active page
         if "_nav_page" not in st.session_state:
-            st.session_state["_nav_page"] = "📊 Revenue Dashboard"
+            st.session_state["_nav_page"] = f"📊 {t('nav_revenue')}"
 
-        cur_page = st.session_state.get("_nav_page", "📊 Revenue Dashboard")
+        cur_page = st.session_state.get("_nav_page", f"📊 {t('nav_revenue')}")
 
         for emoji, label in NAV_ITEMS:
             full = f"{emoji} {label}"
@@ -298,7 +349,10 @@ def main():
         page = cur_page
 
     # Pages that get date/rep filters
-    ANALYTICS_PAGES = {"📊 Revenue Dashboard","💼 CRM / Salesforce","📈 Pipeline Analytics","📧 Outreach"}
+    ANALYTICS_PAGES = {
+        f"📊 {t('nav_revenue')}", f"💼 {t('nav_crm')}",
+        f"📈 {t('nav_pipeline')}", f"📧 {t('nav_outreach')}"
+    }
     show_filters = page in ANALYTICS_PAGES
 
     # ── Filter state + callbacks (widgets rendered per-page below their titles) ──
@@ -307,28 +361,31 @@ def main():
 
     # Initialize defaults in session state
     if "preset" not in st.session_state:
-        st.session_state["preset"] = "Last 30 Days"
+        st.session_state["preset"] = t("period_30d")
         st.session_state["sd"] = max_d - timedelta(days=29)
         st.session_state["ed"] = max_d
-        st.session_state["rep"] = "🏢 Whole Team"
+        st.session_state["rep"] = t("filter_whole_team")
 
     def on_preset_change():
         p = st.session_state["preset"]
-        if p == "Last 30 Days":
+        if p in ("Last 30 Days", t("period_30d")):
             st.session_state["sd"] = max_d - timedelta(days=29)
             st.session_state["ed"] = max_d
-        elif p == "Last 60 Days":
+        elif p in ("Last 60 Days", t("period_60d")):
             st.session_state["sd"] = max_d - timedelta(days=59)
             st.session_state["ed"] = max_d
-        elif p == "Full Quarter":
-            st.session_state["sd"] = min_d
+        elif p in ("Full Quarter", t("period_quarter")):
+            st.session_state["sd"] = max_d - timedelta(days=89)
+            st.session_state["ed"] = max_d
+        elif p in ("Last Year", t("period_year")):
+            st.session_state["sd"] = max_d - timedelta(days=364)
             st.session_state["ed"] = max_d
 
     def reset_date_filters():
-        st.session_state["preset"] = "Last 30 Days"
+        st.session_state["preset"] = t("period_30d")
         st.session_state["sd"] = max_d - timedelta(days=29)
         st.session_state["ed"] = max_d
-        st.session_state["rep"] = "🏢 Whole Team"
+        st.session_state["rep"] = t("filter_whole_team")
 
     # Read current values (widgets update these via keys on rerun)
     start_date = st.session_state.get("sd", max_d - timedelta(days=29))
@@ -345,32 +402,32 @@ def main():
         period_label += f" · {rep_name}"
     pm = compute_period_metrics(current, previous, is_individual_rep=not is_whole_team)
 
-    if   page=="📊 Revenue Dashboard":   render_revenue(db,stats,sim,pm,period_label,current,rep_name,
+    if   page == f"📊 {t('nav_revenue')}":  render_revenue(db,stats,sim,pm,period_label,current,rep_name,
                                                          min_d,max_d,on_preset_change,reset_date_filters)
-    elif page=="⚡ Generate Leads":      render_generate_leads(db,stats)
-    elif page=="🔍 Lead Intelligence":   render_lead_intelligence(db,stats)
-    elif page=="🧭 Sales Navigator":     render_sales_navigator(db,stats)
-    elif page=="💼 CRM / Salesforce":    render_crm(sim,pm,period_label,start_date,end_date,rep_name,
+    elif page == f"⚡ {t('nav_leads')}":     render_generate_leads(db,stats)
+    elif page == f"🔍 {t('nav_intel')}":     render_lead_intelligence(db,stats)
+    elif page == f"🧭 {t('nav_navigator')}": render_sales_navigator(db,stats)
+    elif page == f"💼 {t('nav_crm')}":       render_crm(sim,pm,period_label,start_date,end_date,rep_name,
                                                    min_d,max_d,on_preset_change,reset_date_filters)
-    elif page=="📈 Pipeline Analytics":  render_pipeline_analytics(db,stats,sim,pm,period_label,current,rep_name,
+    elif page == f"📈 {t('nav_pipeline')}": render_pipeline_analytics(db,stats,sim,pm,period_label,current,rep_name,
                                                    min_d,max_d,on_preset_change,reset_date_filters)
-    elif page=="📧 Outreach":            render_outreach(db,stats,sim,pm,period_label,current,
+    elif page == f"📧 {t('nav_outreach')}": render_outreach(db,stats,sim,pm,period_label,current,
                                                    min_d,max_d,on_preset_change,reset_date_filters)
-    elif page=="🏦 Post-Sales (NDR)":    render_post_sales(sim["post_sales"])
-    elif page=="🔮 Scenario Modeler":    render_scenario_modeler(pm, rep_name)
-    elif page=="💬 AI RevOps Copilot":   render_copilot(pm, stats)
+    elif page == f"🏦 {t('nav_postsales')}": render_post_sales(sim["post_sales"])
+    elif page == f"🔮 {t('nav_scenario')}": render_scenario_modeler(pm, rep_name)
+    elif page == f"💬 {t('nav_copilot')}":  render_copilot(pm, stats)
 
 
 # ══════════════════════════════════════════════════════
 # 10. REVOPS COPILOT (GenAI Chat)
 # ══════════════════════════════════════════════════════
 def render_copilot(pm, stats):
-    st.markdown("## 💬 AI RevOps Copilot")
-    st.caption("Ask questions about your pipeline, targets, or opportunities in natural language.")
+    st.markdown(f"## {t('page_copilot')}")
+    st.caption(t("copilot_caption"))
 
     if "messages" not in st.session_state:
         st.session_state.messages = [
-            {"role": "assistant", "content": "Welcome to your command center. I am analyzing your real-time data. What would you like to know about our revenue trajectory?"}
+            {"role": "assistant", "content": t("copilot_welcome")}
         ]
 
     # Display chat messages
@@ -382,17 +439,17 @@ def render_copilot(pm, stats):
     c1, c2, c3 = st.columns(3)
     quick_prompt = None
     with c1:
-        if st.button("📊 Analyze Pipeline Risk", use_container_width=True): quick_prompt = "Analyze Pipeline Risk"
-        if st.button("👑 CEO: Company Valuation Status", use_container_width=True): quick_prompt = "CEO: Company Valuation Status"
+        if st.button(t("copilot_btn_risk"), use_container_width=True): quick_prompt = "Analyze Pipeline Risk"
+        if st.button(t("copilot_btn_ceo"), use_container_width=True): quick_prompt = "CEO: Company Valuation Status"
     with c2:
-        if st.button("🎯 Sales Forecast to Target", use_container_width=True): quick_prompt = "Forecast vs Target"
-        if st.button("📈 VP Sales: Rep Performance", use_container_width=True): quick_prompt = "VP Sales: Rep Performance Breakdown"
+        if st.button(t("copilot_btn_forecast"), use_container_width=True): quick_prompt = "Forecast vs Target"
+        if st.button(t("copilot_btn_vpsales"), use_container_width=True): quick_prompt = "VP Sales: Rep Performance Breakdown"
     with c3:
-        if st.button("💡 Provide Executive Summary", use_container_width=True): quick_prompt = "Executive Summary"
-        if st.button("🏦 VP Revenue: Net Retention Forecast", use_container_width=True): quick_prompt = "VP Revenue: Net Retention Forecast"
+        if st.button(t("copilot_btn_summary"), use_container_width=True): quick_prompt = "Executive Summary"
+        if st.button(t("copilot_btn_vprev"), use_container_width=True): quick_prompt = "VP Revenue: Net Retention Forecast"
 
     # Chat logic
-    prompt = st.chat_input("Ask about revenue, conversions, or specific reps...")
+    prompt = st.chat_input(t("copilot_input"))
     if quick_prompt: prompt = quick_prompt
 
     if prompt:
@@ -401,7 +458,7 @@ def render_copilot(pm, stats):
             st.markdown(prompt)
 
         with st.chat_message("assistant"):
-            with st.spinner("Analyzing RevOps engine..."):
+            with st.spinner(t("copilot_spinner")):
                 import time
                 time.sleep(1.2) # Simulate LLM API delay
                 
@@ -423,26 +480,26 @@ def render_copilot(pm, stats):
 # 9. POST-SALES & RETENTION (Advanced RevOps)
 # ══════════════════════════════════════════════════════
 def render_post_sales(psm):
-    st.markdown("## 🏦 Post-Sales & Expansion")
-    st.caption("Tracking Net Dollar Retention, Account Health, and Upsell Pipeline across the active customer base.")
+    st.markdown(f"## {t('page_postsales')}")
+    st.caption(t("post_sales_caption"))
 
     # Retention BANs
     st.markdown('<div class="section-header">🛡️ RETENTION METRICS</div>', unsafe_allow_html=True)
     r1, r2, r3, r4 = st.columns(4)
     with r1:
-        st.metric("Net Dollar Retention", f"{psm['ndr']:.1f}%", help="Starting ARR + Expansion - Contraction - Churn / Starting ARR. Benchmark >110%.")
+        st.metric(t("post_sales_ndr"), f"{psm['ndr']:.1f}%", help="Starting ARR + Expansion - Contraction - Churn / Starting ARR. Benchmark >110%.")
     with r2:
-        st.metric("Gross Revenue Retention", f"{psm['grr']:.1f}%", help="Starting ARR - Contraction - Churn / Starting ARR. Benchmark >90%.")
+        st.metric(t("post_sales_grr"), f"{psm['grr']:.1f}%", help="Starting ARR - Contraction - Churn / Starting ARR. Benchmark >90%.")
     with r3:
-        st.metric("Active Renewals (90d)", fmtr(psm['active_renewals_90d']))
+        st.metric(t("post_sales_renewals"), fmtr(psm['active_renewals_90d']))
     with r4:
-        st.metric("Logo Churn Rate", f"{psm['logo_churn_rate']:.1f}%", delta="0.5% vs target", delta_color="inverse")
+        st.metric(t("post_sales_churn"), f"{psm['logo_churn_rate']:.1f}%", delta="0.5% vs target", delta_color="inverse")
 
     st.divider()
     c1, c2 = st.columns([1.5, 1])
 
     with c1:
-        st.markdown("### 📈 ARR Composition Waterfall")
+        st.markdown(t("post_sales_waterfall"))
         # Ensure positive values for the raw numbers so plotly calculates correctly
         starting_arr = psm["starting_arr"]
         new_logos = 1850000
@@ -467,7 +524,7 @@ def render_post_sales(psm):
         st.plotly_chart(fig, use_container_width=True, theme=None)
 
     with c2:
-        st.markdown("### ❤️ Account Health Scores")
+        st.markdown(t("post_sales_health"))
         h = psm["health_tiers"]
         h_labels = ["Healthy (🟢)", "At Risk (🟡)", "Critical Risk (🔴)"]
         h_vals = [h["healthy"]["count"], h["at_risk"]["count"], h["critical"]["count"]]
@@ -490,14 +547,14 @@ def render_post_sales(psm):
         # Risk ARR Summary inline
         st.markdown(f"""
         <div style='background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.2);padding:16px;border-radius:12px;margin-top:-20px;'>
-            <div style='color:#ef4444;font-size:0.8rem;text-transform:uppercase;font-weight:700;'>Revenue at Critical Risk</div>
+            <div style='color:#ef4444;font-size:0.8rem;text-transform:uppercase;font-weight:700;'>{t('post_sales_risk')}</div>
             <div style='color:#f8fafc;font-size:1.8rem;font-weight:900;'>{fmtr(h["critical"]["arr"])}</div>
         </div>
         """, unsafe_allow_html=True)
 def render_scenario_modeler(pm, rep_name=None):
     title_suffix = f" — {rep_name}" if rep_name else ""
-    st.markdown(f"## 🔮 Revenue Scenario Modeler{title_suffix}")
-    st.caption("Adjust key levers below to instantly project end-of-quarter pipeline and revenue outcomes.")
+    st.markdown(f"## {t('page_scenario')}{title_suffix}")
+    st.caption(t("scenario_caption"))
 
     # Current baseline metrics
     base_leads = pm["total_leads"] if pm["total_leads"] > 0 else 100
@@ -594,26 +651,26 @@ def render_scenario_modeler(pm, rep_name=None):
 # ══════════════════════════════════════════════════════
 def render_filter_bar(min_d, max_d, on_preset_change, reset_date_filters, show_rep=True):
     """Renders a collapsed expander with date range + sales rep filters."""
-    active_preset = st.session_state.get("preset", "Last 30 Days")
-    active_rep    = st.session_state.get("rep", "🏢 Whole Team")
-    label = f"🔽 Filters  ·  {active_preset}  ·  {active_rep}"
+    active_preset = st.session_state.get("preset", t("period_30d"))
+    active_rep    = st.session_state.get("rep", t("filter_whole_team"))
+    label = f"{t('filter_label')}  ·  {active_preset}  ·  {active_rep}"
     with st.expander(label, expanded=False):
         tf1, tf2, tf3, tf_reset, tf4 = st.columns([1.2, 1.2, 1.4, 0.8, 1.5])
         with tf1:
-            st.date_input("📅 From", min_value=min_d, max_value=max_d, key="sd")
+            st.date_input(t("filter_from"), min_value=min_d, max_value=max_d, key="sd")
         with tf2:
-            st.date_input("📅 To",   min_value=min_d, max_value=max_d, key="ed")
+            st.date_input(t("filter_to"),   min_value=min_d, max_value=max_d, key="ed")
         with tf3:
-            st.selectbox("Period",
-                ["Custom", "Last 30 Days", "Last 60 Days", "Full Quarter"],
+            st.selectbox(t("filter_period"),
+                [t("period_custom"), t("period_30d"), t("period_60d"), t("period_quarter"), t("period_year")],
                 key="preset", on_change=on_preset_change)
         with tf_reset:
             st.markdown("<div style='margin-top:28px'></div>", unsafe_allow_html=True)
-            st.button("🔄 Reset", on_click=reset_date_filters, use_container_width=True)
+            st.button(t("filter_reset"), on_click=reset_date_filters, use_container_width=True)
         if show_rep:
             with tf4:
-                rep_options = ["🏢 Whole Team"] + [f"👤 {n}" for n in SDR_NAMES]
-                st.selectbox("👤 Sales Rep", rep_options, key="rep")
+                rep_options = [t("filter_whole_team")] + [f"👤 {n}" for n in SDR_NAMES]
+                st.selectbox(t("filter_rep"), rep_options, key="rep")
 
 
 # ══════════════════════════════════════════════════════
@@ -623,30 +680,31 @@ def render_revenue(db,stats,sim,pm,period,current,rep_name=None,
                    min_d=None,max_d=None,on_preset_change=None,reset_date_filters=None):
     from src.dashboard.sim_metrics import generate_forecast
     fc = generate_forecast(pm["active_pipeline"])
-    st.markdown("## Revenue Dashboard")
+    st.markdown(f"## {t('page_revenue')}")
+    st.caption(t("revenue_caption"))
     date_banner(period, pm)
     if on_preset_change:
         render_filter_bar(min_d, max_d, on_preset_change, reset_date_filters, show_rep=True)
     st.markdown("")
     # Group 1: Executive Health Metrics
-    st.markdown('<div class="section-header">📈 Executive Health</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="section-header">{t("section_exec_health")}</div>', unsafe_allow_html=True)
     k1,k2,k3,k4 = st.columns(4)
-    with k1: st.metric("💰 REVENUE", fmtr(pm["total_revenue"]), dstr(pm["rev_delta"],pm["has_comparison"]))
-    with k2: st.metric("📊 PIPELINE", fmtr(pm["active_pipeline"]), dstr(pm.get("pipe_delta",0),pm["has_comparison"]))
-    with k3: st.metric("🎯 QUOTA", f'{pm["quota_attainment"]:.0f}%', f'Target: {fmtr(pm["revenue_target"])}')
-    with k4: st.metric("📈 COVERAGE", f'{pm["coverage_ratio"]:.1f}x', "🟢 OK" if pm["coverage_ratio"]>=3 else "🔴 Low")
+    with k1: st.metric(t("metric_revenue"), fmtr(pm["total_revenue"]), dstr(pm["rev_delta"],pm["has_comparison"]))
+    with k2: st.metric(t("metric_pipeline"), fmtr(pm["active_pipeline"]), dstr(pm.get("pipe_delta",0),pm["has_comparison"]))
+    with k3: st.metric(t("metric_quota"), f'{pm["quota_attainment"]:.0f}%', t("metric_target") + f': {fmtr(pm["revenue_target"])}')
+    with k4: st.metric(t("metric_coverage"), f'{pm["coverage_ratio"]:.1f}x', t("metric_coverage_ok") if pm["coverage_ratio"]>=3 else t("metric_coverage_low"))
 
     st.markdown("<div style='margin-top:20px'></div>", unsafe_allow_html=True)
 
     # Group 2: Sales Engine Tactical Metrics
-    st.markdown('<div class="section-header">⚡ Sales Engine</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="section-header">{t("section_sales_engine")}</div>', unsafe_allow_html=True)
     k7,k8,k9,k10,k11,k12 = st.columns(6)
-    with k7:  st.metric("📥 LEADS", fmtn(pm["total_leads"]), dstr(pm["leads_delta"],pm["has_comparison"]))
-    with k8:  st.metric("✅ QUALIFIED", fmtn(pm["total_qualified"]), dstr(pm["qual_delta"],pm["has_comparison"]))
-    with k9:  st.metric("📅 MEETINGS", fmtn(pm["total_meetings"]), dstr(pm["meetings_delta"],pm["has_comparison"]))
-    with k10: st.metric("🤝 DEALS WON", fmtn(pm["total_deals"]), dstr(pm["deals_delta"],pm["has_comparison"]))
-    with k11: st.metric("🏆 WIN RATE", f'{pm["win_rate"]:.1f}%', dstr(pm.get("win_delta",0),pm["has_comparison"]))
-    with k12: st.metric("⏱️ CYCLE", f'{pm["avg_cycle_days"]}d', dstr(pm.get("cycle_delta",0),pm["has_comparison"]))
+    with k7:  st.metric(t("metric_leads"), fmtn(pm["total_leads"]), dstr(pm["leads_delta"],pm["has_comparison"]))
+    with k8:  st.metric(t("metric_qualified"), fmtn(pm["total_qualified"]), dstr(pm["qual_delta"],pm["has_comparison"]))
+    with k9:  st.metric(t("metric_meetings"), fmtn(pm["total_meetings"]), dstr(pm["meetings_delta"],pm["has_comparison"]))
+    with k10: st.metric(t("metric_deals"), fmtn(pm["total_deals"]), dstr(pm["deals_delta"],pm["has_comparison"]))
+    with k11: st.metric(t("metric_win_rate"), f'{pm["win_rate"]:.1f}%', dstr(pm.get("win_delta",0),pm["has_comparison"]))
+    with k12: st.metric(t("metric_cycle"), f'{pm["avg_cycle_days"]}d', dstr(pm.get("cycle_delta",0),pm["has_comparison"]))
 
     st.divider()
 
@@ -654,7 +712,7 @@ def render_revenue(db,stats,sim,pm,period,current,rep_name=None,
     g1,g2,g3 = st.columns(3)
 
     with g1:
-        label = f"🎯 Quota — {rep_name}" if rep_name else "🎯 Quota Attainment"
+        label = f"🎯 Quota — {rep_name}" if rep_name else t("section_quota")
         st.markdown(f"### {label}")
         att = pm["quota_attainment"]
         fig = go.Figure(go.Indicator(
@@ -679,48 +737,48 @@ def render_revenue(db,stats,sim,pm,period,current,rep_name=None,
             f'</div>', unsafe_allow_html=True)
 
     with g2:
-        econ_label = f"💲 Unit Economics — {rep_name}" if rep_name else "💲 Unit Economics"
+        econ_label = f"💲 Unit Economics — {rep_name}" if rep_name else t("section_unit_econ")
         st.markdown(f"### {econ_label}")
         st.markdown("")
         ue1,ue2 = st.columns(2)
         with ue1:
-            st.metric("Customer Acquisition Cost", fmtr(pm["cac"]) if pm["total_deals"] > 0 else "N/A", help="Total Marketing & SDR Spend ÷ Total Deals Won")
-            st.metric("Lifetime Value", fmtr(pm["ltv"]) if pm["total_deals"] > 0 else "N/A", help="Est. 2.8x Expansion Multiplier over 3 years")
+            st.metric(t("metric_cac"), fmtr(pm["cac"]) if pm["total_deals"] > 0 else "N/A", help="Total Marketing & SDR Spend ÷ Total Deals Won")
+            st.metric(t("metric_ltv"), fmtr(pm["ltv"]) if pm["total_deals"] > 0 else "N/A", help="Est. 2.8x Expansion Multiplier over 3 years")
         with ue2:
-            st.metric("LTV : CAC Ratio", f'{pm["ltv_cac_ratio"]:.1f}x', help="Target B2B SaaS benchmark is > 3.0x")
-            st.metric("Total Ad Spend", fmtr(pm["total_spend"]))
+            st.metric(t("metric_ltv_cac"), f'{pm["ltv_cac_ratio"]:.1f}x', help="Target B2B SaaS benchmark is > 3.0x")
+            st.metric(t("metric_ad_spend"), fmtr(pm["total_spend"]))
 
     with g3:
-        alert_label = f"🚨 Alerts — {rep_name}" if rep_name else "🚨 Risk Alerts"
+        alert_label = f"🚨 Alerts — {rep_name}" if rep_name else t("section_risk_alerts")
         st.markdown(f"### {alert_label}")
         # Dynamic alerts based on actual pm data
         dyn_alerts = []
         if pm["quota_attainment"] < 70:
-            dyn_alerts.append({"severity":"high","icon":"🔴","type":"Below Quota",
+            dyn_alerts.append({"severity":"high","icon":"🔴","type":t("alert_below_quota"),
                 "message":f'At {pm["quota_attainment"]:.0f}% — {fmtr(pm["quota_target_amount"] - pm["quota_revenue"])} gap to target',
                 "action":"Accelerate pipeline, review stalled deals"})
         elif pm["quota_attainment"] < 100:
-            dyn_alerts.append({"severity":"medium","icon":"🟡","type":"Quota at Risk",
+            dyn_alerts.append({"severity":"medium","icon":"🟡","type":t("alert_quota_risk"),
                 "message":f'At {pm["quota_attainment"]:.0f}% — {fmtr(pm["quota_target_amount"] - pm["quota_revenue"])} remaining',
                 "action":"Focus on late-stage deals, push for close"})
         else:
-            dyn_alerts.append({"severity":"low","icon":"🟢","type":"Quota Exceeded",
+            dyn_alerts.append({"severity":"low","icon":"🟢","type":t("alert_quota_exceeded"),
                 "message":f'At {pm["quota_attainment"]:.0f}% — {fmtr(pm["quota_revenue"] - pm["quota_target_amount"])} over target',
                 "action":"Maintain momentum, build pipeline for next quarter"})
         if pm["coverage_ratio"] < 3:
-            dyn_alerts.append({"severity":"high","icon":"🔴","type":"Low Coverage",
+            dyn_alerts.append({"severity":"high","icon":"🔴","type":t("alert_low_coverage"),
                 "message":f'Coverage ratio at {pm["coverage_ratio"]:.1f}x — below 3x minimum',
                 "action":"Increase outbound volume or add new pipeline source"})
         if pm["win_rate"] < 15:
-            dyn_alerts.append({"severity":"medium","icon":"🟡","type":"Low Win Rate",
+            dyn_alerts.append({"severity":"medium","icon":"🟡","type":t("alert_low_win_rate"),
                 "message":f'Win rate at {pm["win_rate"]:.1f}% — below 15% threshold',
                 "action":"Review qualification criteria, improve discovery"})
         if pm["conversion_rate"] > 30:
-            dyn_alerts.append({"severity":"low","icon":"🟢","type":"Strong Conversion",
+            dyn_alerts.append({"severity":"low","icon":"🟢","type":t("alert_strong_conversion"),
                 "message":f'Lead→Qualified at {pm["conversion_rate"]:.1f}% — above 30% benchmark',
                 "action":"Scale campaign spend to capitalize on momentum"})
         if pm["ltv_cac_ratio"] > 3:
-            dyn_alerts.append({"severity":"low","icon":"🟢","type":"Healthy Unit Economics",
+            dyn_alerts.append({"severity":"low","icon":"🟢","type":t("alert_healthy_econ"),
                 "message":f'LTV:CAC at {pm["ltv_cac_ratio"]:.1f}x — above 3x benchmark',
                 "action":"Room to increase acquisition spend"})
         for a in dyn_alerts[:3]:  # Top 3
@@ -743,7 +801,7 @@ def render_revenue(db,stats,sim,pm,period,current,rep_name=None,
     c1,c2 = st.columns([3,2])
     with c1:
         title_suffix = f" — {rep_name}" if rep_name else ""
-        st.markdown(f"### 📈 Revenue & Pipeline Trend{title_suffix}")
+        st.markdown(f"### {t('chart_rev_pipeline_trend')}{title_suffix}")
         
         # Trend Controls
         tc1, tc2, tc3 = st.columns([1, 1, 2])
@@ -849,12 +907,12 @@ def render_revenue(db,stats,sim,pm,period,current,rep_name=None,
     with f1:
         fig = go.Figure()
         fig.add_trace(go.Bar(y=[s["stage"] for s in scaled_stages],x=[s["value"] for s in scaled_stages],
-            orientation="h",name="Unweighted",marker_color="rgba(56,189,248,0.2)",
+            orientation="h",name=t("chart_unweighted"),marker_color="rgba(56,189,248,0.2)",
             text=[fmtr(s["value"]) for s in scaled_stages],
             textfont=dict(color="#0f172a", family="Inter", weight="bold"),
             textposition="auto"))
         fig.add_trace(go.Bar(y=[s["stage"] for s in scaled_stages],
-            x=[s["value"]*s["probability"] for s in scaled_stages],orientation="h",name="Weighted",
+            x=[s["value"]*s["probability"] for s in scaled_stages],orientation="h",name=t("chart_weighted"),
             marker_color="#38bdf8",text=[f'{fmtr(s["value"]*s["probability"])} ({s["probability"]*100:.0f}%)' for s in scaled_stages],
             textfont=dict(color="#0f172a", family="Inter", weight="bold"),
             textposition="inside"))
@@ -865,11 +923,11 @@ def render_revenue(db,stats,sim,pm,period,current,rep_name=None,
     with f2:
         best = sum(s["value"] for s in scaled_stages if s["probability"]>=0.25)
         weighted = sum(s["value"]*s["probability"] for s in scaled_stages)
-        st.metric("Best Case",fmtr(best)); st.metric("Weighted",fmtr(weighted))
+        st.metric(t("chart_best_case"),fmtr(best)); st.metric(t("chart_weighted"),fmtr(weighted))
     with f3:
         total_pipe = sum(s["value"] for s in scaled_stages)
         total_deals = sum(s["deals"] for s in scaled_stages)
-        st.metric("Total Pipeline",fmtr(total_pipe)); st.metric("Deals in Pipe",total_deals)
+        st.metric(t("chart_total_pipeline"),fmtr(total_pipe)); st.metric(t("chart_deals_in_pipe"),total_deals)
     _footer()
 
 
@@ -877,8 +935,8 @@ def render_revenue(db,stats,sim,pm,period,current,rep_name=None,
 # 2. GENERATE LEADS (independent tab)
 # ══════════════════════════════════════════════════════
 def render_generate_leads(db,stats):
-    st.markdown("## ⚡ Generate Leads")
-    st.caption("Apply filters, discover qualified leads, import into campaigns")
+    st.markdown(f"## {t('page_leads')}")
+    st.caption(t("leads_caption"))
     st.markdown(
         '<div class="hero-banner"><h2>⚡ Lead Generation Engine</h2>'
         '<p>Set your ICP criteria below and instantly discover, qualify, and import leads</p></div>',
@@ -887,11 +945,11 @@ def render_generate_leads(db,stats):
     fc1,fc2,fc3,fc4 = st.columns(4)
     with fc1:
         mkts = db.get_unique_values("country","dim_companies")
-        gm = st.multiselect("Market",[f"{FLAGS.get(m,'🌐')} {m}" for m in mkts],key="gm")
+        gm = st.multiselect(t("filter_country"),[f"{FLAGS.get(m,'🌐')} {m}" for m in mkts],key="gm")
         mc = [m.split(" ")[-1] for m in gm] if gm else None
-    with fc2: gi = st.multiselect("Industry",db.get_unique_values("industry","dim_companies"),key="gi") or None
+    with fc2: gi = st.multiselect(t("filter_industry"),db.get_unique_values("industry","dim_companies"),key="gi") or None
     with fc3:
-        gs = st.slider("Min Score",0,100,0,key="gs")
+        gs = st.slider(t("filter_min_score"),0,100,0,key="gs")
         gs_v = gs if gs>0 else None
     with fc4: gst = st.multiselect("Status",["qualified","nurture","disqualified"],default=["qualified","nurture"],key="gst") or None
 
@@ -915,9 +973,9 @@ def render_generate_leads(db,stats):
 
     st.divider()
     rc1,rc2,rc3,rc4 = st.columns(4)
-    with rc1: st.metric("🎯 Leads Found",len(results))
-    with rc2: st.metric("✅ Qualified",sum(1 for r in results if r["qualification_status"]=="qualified"))
-    with rc3: st.metric("📊 Avg Score",f'{sum(r["score"] for r in results)/len(results):.0f}' if results else "—")
+    with rc1: st.metric(t("label_total_leads"),len(results))
+    with rc2: st.metric(t("metric_qualified"),sum(1 for r in results if r["qualification_status"]=="qualified"))
+    with rc3: st.metric(t("label_avg_score"),f'{sum(r["score"] for r in results)/len(results):.0f}' if results else "—")
     with rc4: st.metric("🏢 Companies",len(set(r["company_name"] for r in results)))
 
     if not results: st.info("No leads match. Adjust filters."); return
@@ -932,7 +990,7 @@ def render_generate_leads(db,stats):
     with a3: campaign = st.text_input("Campaign Tag",value="Q1-2026-outbound",key="gc")
     with a4:
         st.markdown("&nbsp;")
-        if st.button("🚀 Import Selected Leads",type="primary",use_container_width=True):
+        if st.button(t("btn_import_crm"),type="primary",use_container_width=True):
             st.success(f"✅ **{len(chosen)} leads** imported · Vendor: **{vendor}** · Campaign: **{campaign}**")
 
     # Results table
@@ -962,9 +1020,9 @@ def render_generate_leads(db,stats):
 # 3. LEAD INTELLIGENCE
 # ══════════════════════════════════════════════════════
 def render_lead_intelligence(db,stats):
-    st.markdown("## 🔍 Lead Intelligence")
-    st.caption("Search and explore all scored leads")
-    search = st.text_input("🔎",placeholder="Search company, contact, industry, title...",label_visibility="collapsed")
+    st.markdown(f"## {t('page_intel')}")
+    st.caption(t("intel_caption"))
+    search = st.text_input("🔎",placeholder=t("intel_search"),label_visibility="collapsed")
     with st.sidebar:
         st.divider(); st.markdown("### 🎛️ Filters")
         mkts=db.get_unique_values("country","dim_companies")
@@ -980,10 +1038,12 @@ def render_lead_intelligence(db,stats):
         score_min=scr[0] if scr[0]>0 else None,score_max=scr[1] if scr[1]<100 else None,
         statuses=fst,seniorities=fsen,limit=200)
 
-    # Assign reps deterministically to leads for filtering
+    # Assign reps deterministically based on lead_id so they don't change on filter
     if results:
-        for i, r in enumerate(results):
-            r["assigned_rep"] = SDR_NAMES[i % len(SDR_NAMES)]
+        for r in results:
+            # Create a simple numeric hash from the lead_id string
+            hash_val = sum(ord(c) for c in r["lead_id"])
+            r["assigned_rep"] = SDR_NAMES[hash_val % len(SDR_NAMES)]
         if li_rep != "All Reps":
             results = [r for r in results if r["assigned_rep"] == li_rep]
 
@@ -992,7 +1052,7 @@ def render_lead_intelligence(db,stats):
 
     def open_lead_in_nav(lead_id):
         st.session_state["open_lead_id"] = lead_id
-        st.session_state["nav_radio"] = "🧭 Sales Navigator"
+        st.session_state["_nav_page"] = f"🧭 {t('nav_navigator')}"
 
     # Print Table Headers
     with st.container():
@@ -1028,8 +1088,8 @@ def render_lead_intelligence(db,stats):
 # 4. SALES NAVIGATOR
 # ══════════════════════════════════════════════════════
 def render_sales_navigator(db,stats):
-    st.markdown("## 🧭 Sales Navigator")
-    st.caption("Deep-dive: enrichment, BANT, call plan, outreach cadence")
+    st.markdown(f"## {t('page_navigator')}")
+    st.caption(t("nav_caption"))
     leads=db.search_leads(limit=500)
     if not leads: st.warning("No scored leads."); return
     opts={f"{score_text(l['score'])} {l['company_name']} — {l['contact_name']}":l["lead_id"] for l in leads}
@@ -1037,28 +1097,32 @@ def render_sales_navigator(db,stats):
     # Check if a lead was opened from Lead Intelligence
     pre_selected_id = st.session_state.get("open_lead_id", None)
 
-    with st.sidebar:
-        st.divider(); st.markdown("### 🧭 Select Lead")
-        ns=st.text_input("Filter...",key="ns",placeholder="Type...")
-        filtered={k:v for k,v in opts.items() if ns.lower() in k.lower()} if ns else opts
-        if not filtered: st.warning("No match."); return
+    # Lead Selection Filters (moved to main column from sidebar)
+    st.markdown("### 🧭 Select Lead")
+    ns_col, sel_col = st.columns([1, 2])
+    with ns_col:
+        ns = st.text_input("Filter...", key="ns", placeholder="Type to search...", label_visibility="collapsed")
+    filtered = {k:v for k,v in opts.items() if ns.lower() in k.lower()} if ns else opts
+    if not filtered: st.warning("No match."); return
 
-        # If pre-selected from Lead Intelligence, find and select it
-        default_idx = 0
-        if pre_selected_id:
-            for i, (label, lid) in enumerate(filtered.items()):
-                if lid == pre_selected_id:
-                    default_idx = i; break
-            st.session_state.pop("open_lead_id", None)
+    # If pre-selected from Lead Intelligence, find and select it
+    default_idx = 0
+    if pre_selected_id:
+        for i, (label, lid) in enumerate(filtered.items()):
+            if lid == pre_selected_id:
+                default_idx = i; break
+        st.session_state.pop("open_lead_id", None)
 
-        sel_label=st.selectbox("Choose",list(filtered.keys()),index=default_idx,label_visibility="collapsed")
-        sel_id=filtered[sel_label]
+    with sel_col:
+        sel_label = st.selectbox("Choose", list(filtered.keys()), index=default_idx, label_visibility="collapsed")
+    
+    sel_id = filtered[sel_label]
     lead=db.get_lead_detail(sel_id)
     if not lead: st.error("Not found."); return
 
-    # Assign rep deterministically
-    lead_idx = list(opts.values()).index(sel_id) if sel_id in opts.values() else 0
-    assigned_rep = SDR_NAMES[lead_idx % len(SDR_NAMES)]
+    # Assign rep deterministically based on lead_id string sum
+    hash_val = sum(ord(c) for c in sel_id)
+    assigned_rep = SDR_NAMES[hash_val % len(SDR_NAMES)]
 
     st.divider()
     h1,h2,h3 = st.columns([3,2,1])
@@ -1091,13 +1155,13 @@ def render_sales_navigator(db,stats):
     btn1, btn2, btn3, btn4, btn5 = st.columns(5)
     with btn1:
         email = lead.get('email', '')
-        if st.button("📧 Send Email", use_container_width=True, key="send_email"):
+        if st.button(t("nav_btn_email"), use_container_width=True, key="send_email"):
             if email:
                 st.markdown(f'<meta http-equiv="refresh" content="0;url=mailto:{email}?subject=Follow%20Up%20-%20{lead["company_name"]}">',unsafe_allow_html=True)
             else: st.warning("No email on file")
     with btn2:
         phone = lead.get('phone', '')
-        if st.button("📱 WhatsApp", use_container_width=True, key="send_wa"):
+        if st.button(t("nav_btn_wa"), use_container_width=True, key="send_wa"):
             if phone:
                 clean_phone = phone.replace(' ','').replace('-','').replace('+','')
                 st.markdown(f'<meta http-equiv="refresh" content="0;url=https://wa.me/{clean_phone}?text=Hi%20{lead["contact_name"].split()[0]}%2C%20following%20up%20regarding%20{lead["company_name"]}">',unsafe_allow_html=True)
@@ -1105,11 +1169,11 @@ def render_sales_navigator(db,stats):
     with btn3:
         # Mock linkedin URL
         li_url = f"https://www.linkedin.com/search/results/people/?keywords={lead['contact_name'].replace(' ','%20')}%20{lead['company_name'].replace(' ','%20')}"
-        st.link_button("💼 Send LinkedIn", url=li_url, use_container_width=True)
+        st.link_button(t("nav_btn_li"), url=li_url, use_container_width=True)
     with btn4:
-        st.link_button("🌐 Company Website", url=f"https://www.{lead['company_name'].lower().replace(' ','')}.com", use_container_width=True)
+        st.link_button(t("nav_btn_web"), url=f"https://www.{lead['company_name'].lower().replace(' ','')}.com", use_container_width=True)
     with btn5:
-        st.link_button("🔗 Company LinkedIn", url=f"https://www.linkedin.com/company/{lead['company_name'].lower().replace(' ','-')}", use_container_width=True)
+        st.link_button(t("nav_btn_co_li"), url=f"https://www.linkedin.com/company/{lead['company_name'].lower().replace(' ','-')}", use_container_width=True)
 
     st.divider()
     st.markdown('<div class="section-header">🎯 BANT QUALIFICATION</div>',unsafe_allow_html=True)
@@ -1125,18 +1189,18 @@ def render_sales_navigator(db,stats):
     st.divider()
     lc,rc=st.columns(2)
     with lc:
-        st.markdown('<div class="section-header">🔬 ENRICHMENT DATA</div>',unsafe_allow_html=True)
+        st.markdown(f'<div class="section-header">{t("label_enrichment")}</div>',unsafe_allow_html=True)
         st.markdown("**Tech Stack**"); st.markdown("".join(f'<span class="tag">{t}</span>' for t in (lead.get("tech_stack_detected") or [])) or "_None_",unsafe_allow_html=True)
-        st.markdown("**Tech Gaps**"); st.markdown("".join(f'<span class="signal-tag">⚡ {g}</span>' for g in (lead.get("tech_stack_gaps") or [])) or "_None_",unsafe_allow_html=True)
-        st.markdown("**Buying Signals**")
+        st.markdown(t("nav_tech_gaps")); st.markdown("".join(f'<span class="signal-tag">⚡ {g}</span>' for g in (lead.get("tech_stack_gaps") or [])) or "_None_",unsafe_allow_html=True)
+        st.markdown(t("nav_buying_signals"))
         for sig in (lead.get("buying_signals") or []): st.markdown(f"- 📡 {sig}")
         comp=(lead.get("enrichment_completeness") or 0)*100; st.progress(comp/100,f"Enrichment: {comp:.0f}%")
     with rc:
-        st.markdown('<div class="section-header">📞 DEAL BRIEF</div>',unsafe_allow_html=True)
+        st.markdown(f'<div class="section-header">{t("label_deal_brief")}</div>',unsafe_allow_html=True)
         if lead.get("deal_brief"): st.code(lead["deal_brief"],language="text")
         else: st.info("No brief — only qualified/nurture leads get briefs.")
     st.divider()
-    st.markdown('<div class="section-header">📧 OUTREACH CADENCE</div>',unsafe_allow_html=True)
+    st.markdown(f'<div class="section-header">{t("label_outreach_cadence")}</div>',unsafe_allow_html=True)
     events=lead.get("outreach_events",[])
     if events:
         for ev in sorted(events,key=lambda e:e["sequence_step"]):
@@ -1157,7 +1221,8 @@ def render_sales_navigator(db,stats):
 def render_crm(sim,pm,period,start_date=None,end_date=None,rep_name=None,
                min_d=None,max_d=None,on_preset_change=None,reset_date_filters=None):
     opps = list(sim["sfdc"])
-    st.markdown("## 💼 CRM / Salesforce Opportunities")
+    st.markdown(f"## {t('page_crm')}")
+    st.caption(t("crm_caption"))
     date_banner(period, pm)
     if on_preset_change:
         render_filter_bar(min_d, max_d, on_preset_change, reset_date_filters, show_rep=True)
@@ -1182,19 +1247,19 @@ def render_crm(sim,pm,period,start_date=None,end_date=None,rep_name=None,
     total_won = sum(o["amount"] for o in won)
 
     k1,k2,k3,k4,k5,k6 = st.columns(6)
-    with k1: st.metric("📂 OPEN OPPS",len(open_opps))
-    with k2: st.metric("💰 OPEN VALUE",fmtr(total_open))
+    with k1: st.metric(t("crm_open_opps"),len(open_opps))
+    with k2: st.metric(t("crm_open_pipeline"),fmtr(total_open))
     with k3: st.metric("📊 WEIGHTED",fmtr(total_weighted))
-    with k4: st.metric("🏆 WON",f"{len(won)} ({fmtr(total_won)})")
-    with k5: st.metric("❌ LOST",len(lost))
-    with k6: st.metric("⚠️ AT RISK",len(at_risk),f"{len(stalled)} stalled")
+    with k4: st.metric(t("crm_won"),f"{len(won)} ({fmtr(total_won)})")
+    with k5: st.metric(t("crm_lost"),len(lost))
+    with k6: st.metric(t("crm_at_risk"),len(at_risk),f"{len(stalled)} stalled")
 
     st.divider()
 
     # Pipeline by Stage + Deal Aging
     c1,c2 = st.columns(2)
     with c1:
-        st.markdown("### 📊 Pipeline by Stage")
+        st.markdown(t("crm_pipeline_by_stage"))
         stage_order=["Discovery","Qualification","Demo/POC","Proposal Sent","Negotiation","Verbal Commit","Closed Won","Closed Lost"]
         stage_vals={s:sum(o["amount"] for o in opps if o["stage"]==s) for s in stage_order}
         stage_counts={s:sum(1 for o in opps if o["stage"]==s) for s in stage_order}
@@ -1206,7 +1271,7 @@ def render_crm(sim,pm,period,start_date=None,end_date=None,rep_name=None,
         st.plotly_chart(fig, use_container_width=True, theme=None)
 
     with c2:
-        st.markdown("### ⏱️ Deal Aging (Days Open)")
+        st.markdown(t("crm_deal_aging"))
         open_sorted = sorted(open_opps,key=lambda o:o["age_days"],reverse=True)
         colors = ["#ef4444" if o["age_days"]>45 else "#eab308" if o["age_days"]>30 else "#22c55e" for o in open_sorted]
         fig = go.Figure(go.Bar(
@@ -1220,7 +1285,7 @@ def render_crm(sim,pm,period,start_date=None,end_date=None,rep_name=None,
     st.divider()
 
     # Expected Close This Quarter
-    st.markdown("### 📅 Expected Close Dates")
+    st.markdown(t("crm_expected_close"))
     closing_soon = sorted([o for o in open_opps],key=lambda o:o["close_date"])
     opp_tbl = []
     for o in closing_soon:
@@ -1240,7 +1305,7 @@ def render_crm(sim,pm,period,start_date=None,end_date=None,rep_name=None,
     # Win/Loss + Owner Pipeline
     w1,w2 = st.columns(2)
     with w1:
-        st.markdown("### 🎯 Win/Loss Analysis")
+        st.markdown(t("crm_win_loss"))
         labels=["Won","Open","Lost"]; vals=[len(won),len(open_opps),len(lost)]
         fig = go.Figure(go.Pie(labels=labels,values=vals,hole=.55,
             marker=dict(colors=["#22c55e","#6366f1","#ef4444"]),textinfo="label+value"))
@@ -1248,7 +1313,7 @@ def render_crm(sim,pm,period,start_date=None,end_date=None,rep_name=None,
         st.plotly_chart(fig, use_container_width=True, theme=None)
 
     with w2:
-        st.markdown("### 👤 Pipeline by Owner")
+        st.markdown(t("chart_pipeline_owner"))
         owner_pipe = {}
         for o in open_opps:
             owner_pipe[o["owner"]] = owner_pipe.get(o["owner"],0) + o["amount"]
@@ -1257,7 +1322,7 @@ def render_crm(sim,pm,period,start_date=None,end_date=None,rep_name=None,
             y=[o[0] for o in sorted_owners[::-1]],x=[o[1] for o in sorted_owners[::-1]],
             orientation="h",marker_color="#a855f7",
             text=[fmtr(o[1]) for o in sorted_owners[::-1]],textposition="auto"))
-        fig.update_layout(**PL,height=300,xaxis_title="Pipeline ($)")
+        fig.update_layout(**PL,height=300,xaxis_title=t("chart_pipeline_label"))
         st.plotly_chart(fig, use_container_width=True, theme=None)
     _footer()
 
@@ -1268,22 +1333,23 @@ def render_crm(sim,pm,period,start_date=None,end_date=None,rep_name=None,
 # ══════════════════════════════════════════════════════
 def render_pipeline_analytics(db,stats,sim,pm,period,current=None,rep_name=None,
                                min_d=None,max_d=None,on_preset_change=None,reset_date_filters=None):
-    st.markdown("## 📈 Pipeline Analytics")
+    st.markdown(f"## {t('page_pipeline')}")
+    st.caption(t("pipeline_caption"))
     date_banner(period, pm)
     if on_preset_change:
         render_filter_bar(min_d, max_d, on_preset_change, reset_date_filters, show_rep=True)
     st.markdown("")
     k1,k2,k3,k4,k5=st.columns(5)
-    with k1: st.metric("📥 LEADS",fmtn(pm["total_leads"]),dstr(pm["leads_delta"],pm["has_comparison"]))
-    with k2: st.metric("✅ QUALIFIED",fmtn(pm["total_qualified"]),dstr(pm["qual_delta"],pm["has_comparison"]))
-    with k3: st.metric("📅 MEETINGS",fmtn(pm["total_meetings"]),dstr(pm["meetings_delta"],pm["has_comparison"]))
-    with k4: st.metric("🤝 DEALS",fmtn(pm["total_deals"]),dstr(pm["deals_delta"],pm["has_comparison"]))
-    with k5: st.metric("📊 CONVERSION",f'{pm["conversion_rate"]:.1f}%')
+    with k1: st.metric(t("metric_leads"),fmtn(pm["total_leads"]),dstr(pm["leads_delta"],pm["has_comparison"]))
+    with k2: st.metric(t("metric_qualified"),fmtn(pm["total_qualified"]),dstr(pm["qual_delta"],pm["has_comparison"]))
+    with k3: st.metric(t("metric_meetings"),fmtn(pm["total_meetings"]),dstr(pm["meetings_delta"],pm["has_comparison"]))
+    with k4: st.metric(t("metric_deals"),fmtn(pm["total_deals"]),dstr(pm["deals_delta"],pm["has_comparison"]))
+    with k5: st.metric(t("metric_conversion"),f'{pm["conversion_rate"]:.1f}%')
     st.divider()
 
     c1,c2=st.columns(2)
     with c1:
-        st.markdown("### 📊 Conversion Waterfall")
+        st.markdown(t("chart_conv_waterfall"))
         fig=go.Figure(go.Waterfall(x=["Leads","Qualified","Meetings","Deals"],
             y=[pm["total_leads"],pm["total_qualified"],pm["total_meetings"],pm["total_deals"]],
             textposition="auto",connector=dict(line=dict(color="rgba(148,163,184,0.15)")),
@@ -1293,7 +1359,7 @@ def render_pipeline_analytics(db,stats,sim,pm,period,current=None,rep_name=None,
         st.plotly_chart(fig, use_container_width=True, theme=None)
 
     with c2:
-        st.markdown("### ⏱️ Stage Velocity (Avg Days)")
+        st.markdown(t("chart_stage_velocity"))
         base_vel = sim["velocity"]
         dynamic_vel = []
 
@@ -1328,7 +1394,7 @@ def render_pipeline_analytics(db,stats,sim,pm,period,current=None,rep_name=None,
         st.plotly_chart(fig, use_container_width=True, theme=None)
     st.divider()
 
-    st.markdown("### 🎯 Campaign Attribution & ROI")
+    st.markdown(t("chart_camp_attribution"))
     camps=sim["campaigns"]
     camp_tbl=[{"Campaign":c["name"],"Channel":c["channel"],"Spend":fmtr(c["spend"]),
                "Leads":c["leads"],"Qualified":c["qualified"],"Deals":c["deals"],
@@ -1337,7 +1403,7 @@ def render_pipeline_analytics(db,stats,sim,pm,period,current=None,rep_name=None,
     st.dataframe(camp_tbl,use_container_width=True,hide_index=True,height=340)
     st.divider()
 
-    st.markdown("### 🏅 SDR Leaderboard")
+    st.markdown(t("chart_sdr_leaderboard"))
     sdr=sim["sdr"]
     l1,l2=st.columns([3,2])
     with l1:
@@ -1364,7 +1430,8 @@ def render_pipeline_analytics(db,stats,sim,pm,period,current=None,rep_name=None,
 # ══════════════════════════════════════════════════════
 def render_outreach(db,stats,sim,pm,period,current=None,
                     min_d=None,max_d=None,on_preset_change=None,reset_date_filters=None):
-    st.markdown("## 📧 Outreach Performance")
+    st.markdown(f"## {t('page_outreach')}")
+    st.caption(t("outreach_caption"))
     date_banner(period, pm)
     if on_preset_change:
         render_filter_bar(min_d, max_d, on_preset_change, reset_date_filters, show_rep=False)
@@ -1374,17 +1441,17 @@ def render_outreach(db,stats,sim,pm,period,current=None,
     interested = int(replied * 0.45)  # ~45% of replies are interested
 
     k1,k2,k3,k4,k5,k6=st.columns(6)
-    with k1: st.metric("📤 SENT",fmtn(sent))
-    with k2: st.metric("📖 OPENED",fmtn(opened),f"{opened/sent*100:.0f}%" if sent else "—")
-    with k3: st.metric("💬 REPLIED",fmtn(replied),f"{replied/sent*100:.0f}%" if sent else "—")
-    with k4: st.metric("🤝 INTERESTED",fmtn(interested))
-    with k5: st.metric("📅 MEETINGS",fmtn(pm["total_meetings"]))
-    with k6: st.metric("⚡ VELOCITY",f'{pm["sales_velocity"]/1000:.0f}K/d')
+    with k1: st.metric(t("metric_sent"),fmtn(sent))
+    with k2: st.metric(t("metric_opened"),fmtn(opened),f"{opened/sent*100:.0f}%" if sent else "—")
+    with k3: st.metric(t("metric_replied"),fmtn(replied),f"{replied/sent*100:.0f}%" if sent else "—")
+    with k4: st.metric(t("metric_interested"),fmtn(interested))
+    with k5: st.metric(t("metric_meetings"),fmtn(pm["total_meetings"]))
+    with k6: st.metric(t("metric_velocity"),f'{pm["sales_velocity"]/1000:.0f}K/d')
     st.divider()
 
     c1,c2=st.columns(2)
     with c1:
-        st.markdown("### 📊 Engagement by Touch")
+        st.markdown(t("chart_touch_performance"))
         events=db.get_outreach_events(limit=2000)
         if events:
             d={"Touch":[],"Sent":[],"Opened":[],"Replied":[]}
@@ -1394,13 +1461,13 @@ def render_outreach(db,stats,sim,pm,period,current=None,
                 d["Opened"].append(sum(1 for e in se if e.opened_at))
                 d["Replied"].append(sum(1 for e in se if e.responded_at))
             fig=go.Figure()
-            fig.add_trace(go.Bar(name="Sent",x=d["Touch"],y=d["Sent"],marker_color="rgba(233,69,96,0.5)"))
-            fig.add_trace(go.Bar(name="Opened",x=d["Touch"],y=d["Opened"],marker_color="rgba(234,179,8,0.6)"))
-            fig.add_trace(go.Bar(name="Replied",x=d["Touch"],y=d["Replied"],marker_color="rgba(34,197,94,0.7)"))
+            fig.add_trace(go.Bar(name=t("sent_label"),x=d["Touch"],y=d["Sent"],marker_color="rgba(233,69,96,0.5)"))
+            fig.add_trace(go.Bar(name=t("opened_label"),x=d["Touch"],y=d["Opened"],marker_color="rgba(234,179,8,0.6)"))
+            fig.add_trace(go.Bar(name=t("replied_label"),x=d["Touch"],y=d["Replied"],marker_color="rgba(34,197,94,0.7)"))
             fig.update_layout(**PL,height=350,barmode="group")
             st.plotly_chart(fig, use_container_width=True, theme=None)
     with c2:
-        st.markdown("### 💬 Response Types")
+        st.markdown(t("chart_response_types"))
         if events:
             rc={}
             for e in events:
@@ -1414,15 +1481,15 @@ def render_outreach(db,stats,sim,pm,period,current=None,
                 st.plotly_chart(fig, use_container_width=True, theme=None)
     st.divider()
 
-    st.markdown("### 📈 Weekly Email Trend")
+    st.markdown(t("chart_weekly_email_trend"))
     weekly = aggregate_weekly(current) if current else sim["weekly"]
     fig=go.Figure()
     fig.add_trace(go.Scatter(x=[w["start_date"] for w in weekly],y=[w["emails_sent"] for w in weekly],
-        name="Sent",line=dict(color="#e94560",width=2),fill="tozeroy",fillcolor="rgba(233,69,96,0.05)"))
+        name=t("sent_label"),line=dict(color="#e94560",width=2),fill="tozeroy",fillcolor="rgba(233,69,96,0.05)"))
     fig.add_trace(go.Scatter(x=[w["start_date"] for w in weekly],y=[w["emails_opened"] for w in weekly],
-        name="Opened",line=dict(color="#eab308",width=2)))
+        name=t("opened_label"),line=dict(color="#eab308",width=2)))
     fig.add_trace(go.Scatter(x=[w["start_date"] for w in weekly],y=[w["emails_replied"] for w in weekly],
-        name="Replied",line=dict(color="#22c55e",width=2)))
+        name=t("replied_label"),line=dict(color="#22c55e",width=2)))
     fig.update_layout(**PL,height=350,legend=dict(orientation="h",y=1.12))
     st.plotly_chart(fig, use_container_width=True, theme=None)
     _footer()
