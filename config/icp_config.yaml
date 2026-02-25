@@ -1,0 +1,192 @@
+# ═══════════════════════════════════════════════════════════════════
+# B2B Autonomous Lead Engine — Ideal Customer Profile (ICP) Config
+# ═══════════════════════════════════════════════════════════════════
+# This file declares the target customer filters used by the
+# lead discovery engine to identify high-fit companies.
+# ═══════════════════════════════════════════════════════════════════
+
+version: "1.0"
+last_updated: "2026-02-24"
+
+# ───────────────────────────────────────────────────
+# Global ICP Parameters
+# ───────────────────────────────────────────────────
+global:
+  scoring_weights:
+    firmographic_fit: 0.30
+    behavioral_signals: 0.25
+    tech_stack_gap: 0.25
+    engagement_signals: 0.20
+
+  qualification_thresholds:
+    qualified_min_score: 80
+    nurture_min_score: 60
+    disqualify_below: 60
+
+# ───────────────────────────────────────────────────
+# US Market ICP
+# ───────────────────────────────────────────────────
+profiles:
+  us_b2b_saas:
+    name: "US B2B SaaS Companies"
+    market: "US"
+    enabled: true
+
+    firmographic_filters:
+      industries:
+        - "B2B SaaS"
+        - "Enterprise Software"
+        - "Cloud Infrastructure"
+        - "Data Analytics"
+        - "MarTech"
+        - "RevOps / Sales Tech"
+        - "FinTech"
+      revenue_range:
+        min_usd: 2_000_000
+        max_usd: 100_000_000
+      employee_count:
+        min: 50
+        max: 1000
+      geography:
+        countries: ["US"]
+        states:
+          - "CA"
+          - "NY"
+          - "TX"
+          - "MA"
+          - "WA"
+          - "CO"
+          - "IL"
+          - "FL"
+      company_type:
+        - "Private"
+        - "Venture-backed"
+      funding_stage:
+        - "Series A"
+        - "Series B"
+        - "Series C"
+
+    target_personas:
+      - title: "VP of Sales"
+        seniority: "VP"
+        department: "Sales"
+      - title: "Head of Revenue Operations"
+        seniority: "Director+"
+        department: "Revenue Operations"
+      - title: "CRO"
+        seniority: "C-Level"
+        department: "Revenue"
+      - title: "VP of Marketing"
+        seniority: "VP"
+        department: "Marketing"
+      - title: "Head of Growth"
+        seniority: "Director+"
+        department: "Growth"
+
+    tech_stack_signals:
+      positive_signals:
+        - "Using spreadsheets for pipeline"
+        - "No CRM detected"
+        - "Legacy CRM (ACT!, GoldMine)"
+        - "Manual reporting processes"
+      negative_signals:
+        - "Enterprise Salesforce deployment"
+        - "Fully integrated MarTech stack"
+
+    buying_signals:
+      high_intent:
+        - "Recent funding round"
+        - "New VP/CRO hire"
+        - "SDR team expansion"
+        - "Job posting for RevOps"
+      medium_intent:
+        - "Product launch"
+        - "Market expansion announcement"
+        - "Competitor loss/win mention"
+
+    data_sources:
+      - provider: "apollo"
+        priority: 1
+        daily_limit: 10
+      - provider: "crunchbase"
+        priority: 2
+        daily_limit: 50
+      - provider: "sec_edgar"
+        priority: 3
+        daily_limit: 100
+
+  # ───────────────────────────────────────────────────
+  # Brazil Market ICP
+  # ───────────────────────────────────────────────────
+  brazil_tech:
+    name: "Brazil Tech Companies"
+    market: "BR"
+    enabled: true
+
+    firmographic_filters:
+      industries:
+        - "Tecnologia da Informação"
+        - "Software"
+        - "E-commerce"
+        - "FinTech"
+        - "AgriTech"
+        - "HealthTech"
+      cnae_codes:
+        - "6201-5"   # Software development
+        - "6202-3"   # IT consulting
+        - "6203-1"   # Data processing
+        - "6204-0"   # IT support
+        - "6311-9"   # Data processing / hosting
+      revenue_range:
+        min_brl: 5_000_000
+        max_brl: 500_000_000
+      employee_count:
+        min: 30
+        max: 2000
+      geography:
+        countries: ["BR"]
+        states:
+          - "SP"
+          - "RJ"
+          - "MG"
+          - "PR"
+          - "SC"
+          - "RS"
+      company_type:
+        - "LTDA"
+        - "S/A"
+        - "EIRELI"
+
+    target_personas:
+      - title: "Diretor Comercial"
+        seniority: "Director"
+        department: "Comercial"
+      - title: "Head de Vendas"
+        seniority: "Director+"
+        department: "Vendas"
+      - title: "VP de Receita"
+        seniority: "VP"
+        department: "Revenue"
+      - title: "Gerente de Operações de Vendas"
+        seniority: "Manager+"
+        department: "Sales Operations"
+
+    buying_signals:
+      high_intent:
+        - "Rodada de investimento recente"
+        - "Contratação de VP/Diretor"
+        - "Expansão de equipe comercial"
+      medium_intent:
+        - "Lançamento de produto"
+        - "Expansão para novos mercados"
+
+    data_sources:
+      - provider: "receita_federal"
+        priority: 1
+        daily_limit: 500
+      - provider: "dados_abertos"
+        priority: 2
+        daily_limit: 200
+      - provider: "apollo"
+        priority: 3
+        daily_limit: 10

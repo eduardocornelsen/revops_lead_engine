@@ -1,0 +1,22 @@
+# B2B Autonomous Lead Engine — Dependencies
+# ──────────────────────────────────────────
+
+# Core
+pydantic>=2.0,<3.0
+pydantic-settings>=2.0,<3.0
+pyyaml>=6.0,<7.0
+
+# API
+fastapi>=0.100,<1.0
+uvicorn[standard]>=0.20,<1.0
+
+# Dashboard
+streamlit>=1.30,<2.0
+plotly>=5.18,<6.0
+
+# Data Processing
+polars>=0.20,<1.0
+
+# Testing
+pytest>=7.0,<9.0
+httpx>=0.25,<1.0
