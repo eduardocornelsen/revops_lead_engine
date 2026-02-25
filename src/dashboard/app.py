@@ -425,7 +425,6 @@ def render_scenario_modeler(pm, rep_name=None):
 
     # Calculations
     proj_leads = int(base_leads * (1 + mod_leads / 100.0))
-    # Keep conversion rates stable to isolate the sliders
     proj_deals = int(proj_leads * (pm["conversion_rate"]/100.0) * ((base_win_rate + mod_win_rate)/100.0))
     proj_acv = base_acv * (1 + mod_acv / 100.0)
     proj_rev = proj_deals * proj_acv
@@ -433,6 +432,19 @@ def render_scenario_modeler(pm, rep_name=None):
     
     base_rev = pm["total_revenue"]
     rev_diff = proj_rev - base_rev
+
+    # Dynamic Insights Engine — placed between Levers and Outcomes
+    st.markdown('<div class="section-header">🤖 AI SCENARIO INSIGHTS</div>', unsafe_allow_html=True)
+    if proj_rev >= pm["revenue_target"]:
+        st.success(f"**Target Attainable:** This scenario generates **{fmtr(proj_rev - pm['revenue_target'])} above quota**. {'The accelerated sales velocity is pulling revenue forward.' if mod_cycle < 0 else 'Even with cycle delays, sheer volume covers the spread.'}")
+    elif proj_rev > pm["total_revenue"]:
+        rev_diff = proj_rev - pm["total_revenue"]
+        st.warning(f"**Growth, but missing quota:** Revenue grows {fmtr(rev_diff)}, but you still miss the {fmtr(pm['revenue_target'])} target by {fmtr(pm['revenue_target'] - proj_rev)}. Recommend increasing pipeline volume.")
+    else:
+        rev_diff = proj_rev - pm["total_revenue"]
+        st.error(f"**Severe Revenue Contraction:** This scenario results in a {fmtr(abs(rev_diff))} loss against baseline pace. {'Cycle time delays are pushing closed-won dates out of the quarter.' if mod_cycle > 10 else 'Falling win rates are bleeding pipeline value.'}")
+
+    st.divider()
 
     st.markdown('<div class="section-header">📈 PROJECTED OUTCOMES</div>', unsafe_allow_html=True)
     r1, r2, r3, r4 = st.columns(4)
@@ -444,20 +456,6 @@ def render_scenario_modeler(pm, rep_name=None):
         st.metric("Projected ACV", fmtr(proj_acv), delta=f"{mod_acv}%" if mod_acv else None)
     with r4:
         st.metric("Projected Velocity", f"{proj_cycle} days", delta=f"{mod_cycle} days", delta_color="inverse")
-
-    # Modeler Chart - Time Series Projection
-    st.divider()
-
-    # Dynamic Insights Engine
-    st.markdown('<div class="section-header">🤖 AI SCENARIO INSIGHTS</div>', unsafe_allow_html=True)
-    if proj_rev >= pm["revenue_target"]:
-        st.success(f"**Target Attainable:** This scenario generates **{fmtr(proj_rev - pm['revenue_target'])} above quota**. {'The accelerated sales velocity is pulling revenue forward.' if mod_cycle < 0 else 'Even with cycle delays, sheer volume covers the spread.'}")
-    elif proj_rev > pm["total_revenue"]:
-        rev_diff = proj_rev - pm["total_revenue"]
-        st.warning(f"**Growth, but missing quota:** Revenue grows {fmtr(rev_diff)}, but you still miss the {fmtr(pm['revenue_target'])} target by {fmtr(pm['revenue_target'] - proj_rev)}. Recommend increasing pipeline volume.")
-    else:
-        rev_diff = proj_rev - pm["total_revenue"]
-        st.error(f"**Severe Revenue Contraction:** This scenario results in a {fmtr(abs(rev_diff))} loss against baseline pace. {'Cycle time delays are pushing closed-won dates out of the quarter.' if mod_cycle > 10 else 'Falling win rates are bleeding pipeline value.'}")
 
     # Modeler Chart - Time Series Projection
     st.markdown("<br/>", unsafe_allow_html=True)
