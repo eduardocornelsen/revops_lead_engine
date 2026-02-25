@@ -202,7 +202,7 @@ def main():
     ANALYTICS_PAGES = {"📊 Revenue Dashboard","💼 CRM / Salesforce","📈 Pipeline Analytics","📧 Outreach"}
     show_filters = page in ANALYTICS_PAGES
 
-    # ── Top Filter Bar (only on analytics pages) ──────
+    # ── Filter state + callbacks (widgets rendered per-page below their titles) ──
     min_d, max_d = get_daily_date_range(sim["daily"])
     from datetime import timedelta
 
@@ -213,43 +213,28 @@ def main():
         st.session_state["ed"] = max_d
         st.session_state["rep"] = "🏢 Whole Team"
 
-    if show_filters:
-        def on_preset_change():
-            p = st.session_state["preset"]
-            if p == "Last 30 Days":
-                st.session_state["sd"] = max_d - timedelta(days=29)
-                st.session_state["ed"] = max_d
-            elif p == "Last 60 Days":
-                st.session_state["sd"] = max_d - timedelta(days=59)
-                st.session_state["ed"] = max_d
-            elif p == "Full Quarter":
-                st.session_state["sd"] = min_d
-                st.session_state["ed"] = max_d
-
-        def reset_date_filters():
-            st.session_state["preset"] = "Last 30 Days"
+    def on_preset_change():
+        p = st.session_state["preset"]
+        if p == "Last 30 Days":
             st.session_state["sd"] = max_d - timedelta(days=29)
             st.session_state["ed"] = max_d
-            st.session_state["rep"] = "🏢 Whole Team"
+        elif p == "Last 60 Days":
+            st.session_state["sd"] = max_d - timedelta(days=59)
+            st.session_state["ed"] = max_d
+        elif p == "Full Quarter":
+            st.session_state["sd"] = min_d
+            st.session_state["ed"] = max_d
 
-        tf1, tf2, tf3, tf_reset, tf4 = st.columns([1.1, 1.1, 1.3, 0.8, 1.5])
-        with tf1:
-            start_date = st.date_input("📅 From", min_value=min_d, max_value=max_d, key="sd")
-        with tf2:
-            end_date = st.date_input("📅 To", min_value=min_d, max_value=max_d, key="ed")
-        with tf3:
-            preset = st.selectbox("Period", ["Custom","Last 30 Days","Last 60 Days","Full Quarter"],
-                                  key="preset", on_change=on_preset_change)
-        with tf_reset:
-            st.markdown("<div style='margin-top:28px'></div>", unsafe_allow_html=True)
-            st.button("🔄 Reset", on_click=reset_date_filters, use_container_width=True)
-        with tf4:
-            rep_options = ["🏢 Whole Team"] + [f"👤 {n}" for n in SDR_NAMES]
-            selected_rep = st.selectbox("👤 Sales Rep", rep_options, key="rep")
-    else:
-        start_date = st.session_state.get("sd", max_d - timedelta(days=29))
-        end_date = st.session_state.get("ed", max_d)
-        selected_rep = st.session_state.get("rep", "🏢 Whole Team")
+    def reset_date_filters():
+        st.session_state["preset"] = "Last 30 Days"
+        st.session_state["sd"] = max_d - timedelta(days=29)
+        st.session_state["ed"] = max_d
+        st.session_state["rep"] = "🏢 Whole Team"
+
+    # Read current values (widgets update these via keys on rerun)
+    start_date = st.session_state.get("sd", max_d - timedelta(days=29))
+    end_date   = st.session_state.get("ed", max_d)
+    selected_rep = st.session_state.get("rep", "🏢 Whole Team")
 
     # Compute period metrics — apply date range and optional rep filter
     is_whole_team = selected_rep.startswith("🏢")
@@ -261,13 +246,17 @@ def main():
         period_label += f" · {rep_name}"
     pm = compute_period_metrics(current, previous, is_individual_rep=not is_whole_team)
 
-    if   page=="📊 Revenue Dashboard":   render_revenue(db,stats,sim,pm,period_label,current,rep_name)
+    if   page=="📊 Revenue Dashboard":   render_revenue(db,stats,sim,pm,period_label,current,rep_name,
+                                                         min_d,max_d,on_preset_change,reset_date_filters)
     elif page=="⚡ Generate Leads":      render_generate_leads(db,stats)
     elif page=="🔍 Lead Intelligence":   render_lead_intelligence(db,stats)
     elif page=="🧭 Sales Navigator":     render_sales_navigator(db,stats)
-    elif page=="💼 CRM / Salesforce":    render_crm(sim,pm,period_label,start_date,end_date,rep_name)
-    elif page=="📈 Pipeline Analytics":  render_pipeline_analytics(db,stats,sim,pm,period_label,current,rep_name)
-    elif page=="📧 Outreach":            render_outreach(db,stats,sim,pm,period_label,current)
+    elif page=="💼 CRM / Salesforce":    render_crm(sim,pm,period_label,start_date,end_date,rep_name,
+                                                   min_d,max_d,on_preset_change,reset_date_filters)
+    elif page=="📈 Pipeline Analytics":  render_pipeline_analytics(db,stats,sim,pm,period_label,current,rep_name,
+                                                   min_d,max_d,on_preset_change,reset_date_filters)
+    elif page=="📧 Outreach":            render_outreach(db,stats,sim,pm,period_label,current,
+                                                   min_d,max_d,on_preset_change,reset_date_filters)
     elif page=="🏦 Post-Sales (NDR)":    render_post_sales(sim["post_sales"])
     elif page=="🔮 Scenario Modeler":    render_scenario_modeler(pm, rep_name)
     elif page=="💬 AI RevOps Copilot":   render_copilot(pm, stats)
@@ -506,14 +495,44 @@ def render_scenario_modeler(pm, rep_name=None):
 
 
 # ══════════════════════════════════════════════════════
+# SHARED: Collapsible filter bar (used by all analytics pages)
+# ══════════════════════════════════════════════════════
+def render_filter_bar(min_d, max_d, on_preset_change, reset_date_filters, show_rep=True):
+    """Renders a collapsed expander with date range + sales rep filters."""
+    active_preset = st.session_state.get("preset", "Last 30 Days")
+    active_rep    = st.session_state.get("rep", "🏢 Whole Team")
+    label = f"🔽 Filters  ·  {active_preset}  ·  {active_rep}"
+    with st.expander(label, expanded=False):
+        tf1, tf2, tf3, tf_reset, tf4 = st.columns([1.2, 1.2, 1.4, 0.8, 1.5])
+        with tf1:
+            st.date_input("📅 From", min_value=min_d, max_value=max_d, key="sd")
+        with tf2:
+            st.date_input("📅 To",   min_value=min_d, max_value=max_d, key="ed")
+        with tf3:
+            st.selectbox("Period",
+                ["Custom", "Last 30 Days", "Last 60 Days", "Full Quarter"],
+                key="preset", on_change=on_preset_change)
+        with tf_reset:
+            st.markdown("<div style='margin-top:28px'></div>", unsafe_allow_html=True)
+            st.button("🔄 Reset", on_click=reset_date_filters, use_container_width=True)
+        if show_rep:
+            with tf4:
+                rep_options = ["🏢 Whole Team"] + [f"👤 {n}" for n in SDR_NAMES]
+                st.selectbox("👤 Sales Rep", rep_options, key="rep")
+
+
+# ══════════════════════════════════════════════════════
 # 1. REVENUE DASHBOARD
 # ══════════════════════════════════════════════════════
-def render_revenue(db,stats,sim,pm,period,current,rep_name=None):
+def render_revenue(db,stats,sim,pm,period,current,rep_name=None,
+                   min_d=None,max_d=None,on_preset_change=None,reset_date_filters=None):
     from src.dashboard.sim_metrics import generate_forecast
     fc = generate_forecast(pm["active_pipeline"])
     st.markdown("## Revenue Dashboard")
     date_banner(period, pm)
-
+    if on_preset_change:
+        render_filter_bar(min_d, max_d, on_preset_change, reset_date_filters, show_rep=True)
+    st.markdown("")
     # Group 1: Executive Health Metrics
     st.markdown('<div class="section-header">📈 Executive Health</div>', unsafe_allow_html=True)
     k1,k2,k3,k4 = st.columns(4)
@@ -1038,11 +1057,14 @@ def render_sales_navigator(db,stats):
 # ══════════════════════════════════════════════════════
 # 5. CRM / SALESFORCE OPPORTUNITIES
 # ══════════════════════════════════════════════════════
-def render_crm(sim,pm,period,start_date=None,end_date=None,rep_name=None):
-    opps = list(sim["sfdc"])  # copy so we don't mutate
+def render_crm(sim,pm,period,start_date=None,end_date=None,rep_name=None,
+               min_d=None,max_d=None,on_preset_change=None,reset_date_filters=None):
+    opps = list(sim["sfdc"])
     st.markdown("## 💼 CRM / Salesforce Opportunities")
     date_banner(period, pm)
-
+    if on_preset_change:
+        render_filter_bar(min_d, max_d, on_preset_change, reset_date_filters, show_rep=True)
+    st.markdown("")
     # Filter opportunities by date range
     if start_date and end_date:
         sd = str(start_date); ed = str(end_date)
@@ -1147,10 +1169,13 @@ def render_crm(sim,pm,period,start_date=None,end_date=None,rep_name=None):
 # 6. PIPELINE ANALYTICS
 # ══════════════════════════════════════════════════════
 # ══════════════════════════════════════════════════════
-def render_pipeline_analytics(db,stats,sim,pm,period,current=None,rep_name=None):
+def render_pipeline_analytics(db,stats,sim,pm,period,current=None,rep_name=None,
+                               min_d=None,max_d=None,on_preset_change=None,reset_date_filters=None):
     st.markdown("## 📈 Pipeline Analytics")
     date_banner(period, pm)
-
+    if on_preset_change:
+        render_filter_bar(min_d, max_d, on_preset_change, reset_date_filters, show_rep=True)
+    st.markdown("")
     k1,k2,k3,k4,k5=st.columns(5)
     with k1: st.metric("📥 LEADS",fmtn(pm["total_leads"]),dstr(pm["leads_delta"],pm["has_comparison"]))
     with k2: st.metric("✅ QUALIFIED",fmtn(pm["total_qualified"]),dstr(pm["qual_delta"],pm["has_comparison"]))
@@ -1238,10 +1263,13 @@ def render_pipeline_analytics(db,stats,sim,pm,period,current=None,rep_name=None)
 # ══════════════════════════════════════════════════════
 # 7. OUTREACH PERFORMANCE
 # ══════════════════════════════════════════════════════
-def render_outreach(db,stats,sim,pm,period,current=None):
+def render_outreach(db,stats,sim,pm,period,current=None,
+                    min_d=None,max_d=None,on_preset_change=None,reset_date_filters=None):
     st.markdown("## 📧 Outreach Performance")
     date_banner(period, pm)
-
+    if on_preset_change:
+        render_filter_bar(min_d, max_d, on_preset_change, reset_date_filters, show_rep=False)
+    st.markdown("")
     # Use period-filtered email metrics from pm
     sent = pm["total_emails"]; opened = pm["total_opened"]; replied = pm["total_replied"]
     interested = int(replied * 0.45)  # ~45% of replies are interested
