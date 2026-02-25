@@ -12,7 +12,10 @@
     <a href="#license"><img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" alt="License"/></a>
   </p>
 
-  ![Dashboard Preview](docs/images/cover-small.jpg)
+<a href="https://revops-lead-engine.streamlit.app/">
+  <img src="https://raw.githubusercontent.com/eduardocornelsen/revops_lead_engine/main/docs/images/cover-small.jpg" width="100%" alt="RevOps Lead Engine Dashboard" style="border-radius: 8px;">
+</a>
+<br><br>
 
   <p align="center">
     <a href="https://revops-lead-engine.streamlit.app/"><img src="https://img.shields.io/badge/🚀_LIVE_DEMO-Click_to_Launch-00C853?style=for-the-badge&logoColor=white" alt="Live Demo"/></a>
