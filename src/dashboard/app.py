@@ -100,9 +100,9 @@ def get_sim_data():
 # ── Helpers ───────────────────────────────────────────
 FLAGS = {"US":"🇺🇸","BR":"🇧🇷","UK":"🇬🇧","DE":"🇩🇪","FR":"🇫🇷","IL":"🇮🇱","SG":"🇸🇬",
          "AU":"🇦🇺","CA":"🇨🇦","NL":"🇳🇱","SE":"🇸🇪","IN":"🇮🇳","JP":"🇯🇵","KR":"🇰🇷"}
-PL = dict(plot_bgcolor="rgba(0,0,0,0)",paper_bgcolor="rgba(0,0,0,0)",
+PL = dict(template="none",plot_bgcolor="rgba(0,0,0,0)",paper_bgcolor="rgba(0,0,0,0)",
           font=dict(color="#94a3b8",family="Inter",size=11),margin=dict(l=40,r=20,t=36,b=40),
-          hoverlabel=dict(bgcolor="#f8fafc",font=dict(size=12,family="Inter",color="#0f172a"),bordercolor="#cbd5e1"))
+          hoverlabel=dict(bgcolor="#1e293b",font=dict(size=12,family="Inter",color="#f8fafc"),bordercolor="#475569"))
 
 def fmtr(v):
     if v>=1e9: return f"${v/1e9:.1f}B"
