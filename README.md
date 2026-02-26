@@ -109,7 +109,7 @@ Simulated Salesforce-style opportunity management with deal stages, amounts, clo
 │ ICP CONFIG  ──▶  DISCOVERY   ──▶  ENRICHMENT  ──▶   SCORING    ──▶   OUTREACH   ──▶   CRM      │
 │   (YAML)       (Apollo/CNPJ)   (Hunter/BuiltWith)  (Rules/ML)        (Email)        (HubSpot)  │
 │      │               │                │               │                 │              │       │
-│      │         dim_companies   fct_enriched_leads  fct_scored     fct_outreach       Deals     │                                                            │      │         dim_contacts           │            + deal_brief     _events         + Opps     │
+│      │         dim_companies   fct_enriched_leads  fct_scored     fct_outreach       Deals     │                                     │      │         dim_contacts           │            + deal_brief     _events         + Opps     │
 │      │               │                │               │                 │              │       │
 │      ▼               ▼                ▼               ▼                 ▼              ▼       │
 │┌───────────┐   ┌───────────┐    ┌───────────┐   ┌───────────┐    ┌───────────┐   ┌───────────┐ │
@@ -125,17 +125,17 @@ Simulated Salesforce-style opportunity management with deal stages, amounts, clo
 
 ## 🛠️ Tech Stack
 
-| Layer              | Technology                                                                   |
-| ------------------ | ---------------------------------------------------------------------------- |
-| **Frontend**       | Streamlit, Custom CSS (Cybermorphic dark theme), Plotly Graph Objects        |
-| **Backend**        | Python 3.10+ · SQLite3                                                       |
-| **Data Models**    | Pydantic v2 (strict validation, JSON serialization)                          |
-| **AI / ML**        | LLM prompt templates · Rule-based scoring engine · XAI transparency layer    |
-| **Data Simulation**| Faker · Random weighted distributions · Monte Carlo projections              |
-| **API**            | FastAPI · Uvicorn (scoring endpoint)                                         |
-| **CRM**            | HubSpot / Salesforce interface (mock for MVP)                                |
-| **Testing**        | pytest                                                                       |
-| **Config**         | YAML (ICP profiles) · `.streamlit/config.toml` (theme)                       |
+| Layer               | Technology                                                                |
+| ------------------- | ------------------------------------------------------------------------- |
+| **Frontend**        | Streamlit, Custom CSS (Cybermorphic dark theme), Plotly Graph Objects     |
+| **Backend**         | Python 3.10+ · SQLite3                                                    |
+| **Data Models**     | Pydantic v2 (strict validation, JSON serialization)                       |
+| **AI / ML**         | LLM prompt templates · Rule-based scoring engine · XAI transparency layer |
+| **Data Simulation** | Faker · Random weighted distributions · Monte Carlo projections           |
+| **API**             | FastAPI · Uvicorn (scoring endpoint)                                      |
+| **CRM**             | HubSpot / Salesforce interface (mock for MVP)                             |
+| **Testing**         | pytest                                                                    |
+| **Config**          | YAML (ICP profiles) · `.streamlit/config.toml` (theme)                    |
 
 ---
 
@@ -235,18 +235,18 @@ revops_lead_engine/
 
 ## 📊 Dashboard Modules
 
-| #  | Module                     | Purpose                                                                                    |
-| -- | -------------------------- | ------------------------------------------------------------------------------------------ |
-| 1  | 💬 AI RevOps Copilot       | Natural-language AI chat for pipeline risk analysis, quota pacing, and rep performance      |
-| 2  | 📊 Revenue Dashboard       | VP-level KPIs: quota attainment, pipeline coverage, CAC/LTV, revenue forecast              |
-| 3  | ⚡ Generate Leads           | Firmographic & BANT filtering engine to queue targeted outreach campaigns                   |
-| 4  | 🔍 Lead Intelligence       | Full-text search with XAI tooltips explaining score components                              |
-| 5  | 🧭 Sales Navigator         | Individual lead deep-dive with AI Deal Briefs, SPIN questions, LinkedIn actions             |
-| 6  | 💼 CRM / Salesforce        | Opportunity management with deal stages and pipeline progression                            |
-| 7  | 📈 Pipeline Analytics      | Funnel drop-off, Stage Velocity, Campaign ROI attribution, SDR Leaderboard                  |
-| 8  | 📧 Outreach Performance    | Email cadence tracking: opens, replies, bounces, response classification                    |
-| 9  | 🏦 Post-Sales (NDR)        | Net Dollar Retention, Account Health tiers, ARR Waterfall chart                             |
-| 10 | 🔮 Scenario Modeler        | 90-day revenue trajectory projection with adjustable revenue levers and AI insights         |
+| #   | Module                 | Purpose                                                                                |
+| --- | ---------------------- | -------------------------------------------------------------------------------------- |
+| 1   | 💬 AI RevOps Copilot    | Natural-language AI chat for pipeline risk analysis, quota pacing, and rep performance |
+| 2   | 📊 Revenue Dashboard    | VP-level KPIs: quota attainment, pipeline coverage, CAC/LTV, revenue forecast          |
+| 3   | ⚡ Generate Leads       | Firmographic & BANT filtering engine to queue targeted outreach campaigns              |
+| 4   | 🔍 Lead Intelligence    | Full-text search with XAI tooltips explaining score components                         |
+| 5   | 🧭 Sales Navigator      | Individual lead deep-dive with AI Deal Briefs, SPIN questions, LinkedIn actions        |
+| 6   | 💼 CRM / Salesforce     | Opportunity management with deal stages and pipeline progression                       |
+| 7   | 📈 Pipeline Analytics   | Funnel drop-off, Stage Velocity, Campaign ROI attribution, SDR Leaderboard             |
+| 8   | 📧 Outreach Performance | Email cadence tracking: opens, replies, bounces, response classification               |
+| 9   | 🏦 Post-Sales (NDR)     | Net Dollar Retention, Account Health tiers, ARR Waterfall chart                        |
+| 10  | 🔮 Scenario Modeler     | 90-day revenue trajectory projection with adjustable revenue levers and AI insights    |
 
 ---
 
@@ -301,11 +301,11 @@ To adapt this for a live production B2B SaaS environment, refer to:
 
 ## 📖 Documentation
 
-| Document                                                        | Description                              |
-| --------------------------------------------------------------- | ---------------------------------------- |
-| [Architecture Guide](docs/architecture.md)                      | System design & data flow diagrams       |
-| [Data Dictionary](docs/data_dictionary.md)                      | Schema documentation for all tables      |
-| [Real Data Integration Guide](docs/Real_Data_Integration_Guide.md) | Replacing synthetic data with live APIs  |
+| Document                                                           | Description                             |
+| ------------------------------------------------------------------ | --------------------------------------- |
+| [Architecture Guide](docs/architecture.md)                         | System design & data flow diagrams      |
+| [Data Dictionary](docs/data_dictionary.md)                         | Schema documentation for all tables     |
+| [Real Data Integration Guide](docs/Real_Data_Integration_Guide.md) | Replacing synthetic data with live APIs |
 
 ---
 
