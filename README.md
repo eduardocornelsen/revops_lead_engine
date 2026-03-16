@@ -299,13 +299,13 @@ To adapt this for a live production B2B SaaS environment, refer to:
 
 ---
 
-## 📖 Documentation
-
-| Document                                                           | Description                             |
-| ------------------------------------------------------------------ | --------------------------------------- |
-| [Architecture Guide](docs/architecture.md)                         | System design & data flow diagrams      |
-| [Data Dictionary](docs/data_dictionary.md)                         | Schema documentation for all tables     |
-| [Real Data Integration Guide](docs/Real_Data_Integration_Guide.md) | Replacing synthetic data with live APIs |
+  ## 📖 Documentation
+  
+  | Document                                                           | Description                             |
+  | ------------------------------------------------------------------ | --------------------------------------- |
+  | [Architecture Guide](docs/architecture.md)                         | System design & data flow diagrams      |
+  | [Data Dictionary](docs/data_dictionary.md)                         | Schema documentation for all tables     |
+  | [Real Data Integration Guide](docs/Real_Data_Integration_Guide.md) | Replacing synthetic data with live APIs |
 
 ---
 
@@ -328,6 +328,6 @@ MIT License — see [LICENSE](LICENSE) for details.
 ---
 
 <p align="center">
-  <sub>Built with ☕ by <strong>Eduardo Cornelsen</strong> — © 2025 All Rights Reserved</sub><br/>
+  <sub>Built with ☕ by <strong>Eduardo Cornelsen</strong> — © 2026 All Rights Reserved</sub><br/>
   <sub>Revenue Operations · Data Engineering · AI/ML · Full-Stack Development</sub>
 </p>
